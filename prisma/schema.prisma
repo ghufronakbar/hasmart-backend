@@ -1,0 +1,326 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Branch {
+  id Int @id @default(autoincrement()) @map("id")
+
+  // branch setting
+  code      String  @unique @map("code")
+  name      String  @map("name")
+  address   String? @map("address") @db.Text()
+  phone     String? @map("phone") @db.Text()
+  email     String? @map("email")
+  fax       String? @map("fax")
+  npwp      String? @map("npwp")
+  ownerName String? @map("owner_name")
+
+  // another settings
+  receiptSize         String? @map("receipt_size") // TODO: fix enum later
+  receiptFooter       String? @map("receipt_footer")
+  receiptPrinter      String? @map("receipt_printer")
+  labelBarcodePrinter String? @map("label_barcode_printer")
+  reportPrinter       String? @map("report_printer")
+
+  // relation
+  itemBranches         ItemBranch[]
+  transactionPurchases TransactionPurchase[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("branches")
+}
+
+model User {
+  id   Int    @id @default(autoincrement()) @map("id")
+  name String @unique @map("name")
+
+  password String  @map("password")
+  isActive Boolean @map("is_active")
+
+  // TODO: tambah hak akses
+
+  isSuperUser Boolean @map("is_super_user") // user pertama yang dibuat ketika aplikasi dijalankan
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("users")
+}
+
+// ex: RKK - Rokok
+// Bersifat global, bukan per cabang
+model MasterItemCategory {
+  id Int @id @default(autoincrement()) @map("id")
+
+  code String @map("code") // ex: DET
+  name String @map("name") // ex: Detergen
+
+  // relation
+  items MasterItem[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("categories")
+}
+
+// Bersifat global, bukan per cabang
+model MasterItem {
+  id Int @id @default(autoincrement()) @map("id")
+
+  name String @map("name")
+
+  masterItemCategoryId Int                @map("master_item_category_id")
+  masterItemCategory   MasterItemCategory @relation(fields: [masterItemCategoryId], references: [id])
+
+  masterSupplierId Int            @map("master_supplier_id") // hanya sebagai referensi siapa supplier utama
+  masterSupplier   MasterSupplier @relation(fields: [masterSupplierId], references: [id])
+
+  // global (inputable)
+  isActive Boolean @map("is_active")
+
+  // global (recorded from transaction)
+  recordedBuyPrice Int @map("recorded_buy_price")
+
+  // mapping item per cabang (ex: kebutuhan stok)
+  itemBranches ItemBranch[]
+
+  // variant (ex: PCS, PACK, dll)
+  masterItemVariants MasterItemVariant[]
+
+  // track purchase
+  transactionPurchaseItems TransactionPurchaseItem[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("master_items")
+}
+
+// sebagai pivot dan beberapa informasi tambahan
+model ItemBranch {
+  id Int @id @default(autoincrement()) @map("id")
+
+  // recorded (from transaction)
+  recordedStock Int @map("recorded_stock")
+
+  // pivot
+  masterItemId Int        @map("master_item_id")
+  masterItem   MasterItem @relation(fields: [masterItemId], references: [id])
+  branchId     Int        @map("branch_id")
+  branch       Branch     @relation(fields: [branchId], references: [id])
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("item_branches")
+}
+
+model MasterItemVariant {
+  id Int @id @default(autoincrement()) @map("id")
+
+  // CODE DISINI. Bisa Null (kalau barang curah/jasa), tapi Unique jika ada.
+  code   String? @map("code")
+  unit   String  @map("unit") // PCS, PACK, BOX
+  amount Int     @map("amount") // Konversi ke base unit. Base = 1
+
+  recordedBuyPrice Int @map("recorded_buy_price") // harga beli yang di record dari transaksi
+  sellPrice        Int @map("sell_price") // karena harga per pcs dan pack beda
+
+  masterItemId Int        @map("master_item_id")
+  masterItem   MasterItem @relation(fields: [masterItemId], references: [id])
+
+  isBaseUnit Boolean @map("is_base_unit") // apakah ini unit dasar (biasanya PCS, intinya amount=1)
+
+  // track purchase
+  transactionPurchaseItems TransactionPurchaseItem[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("item_variants")
+}
+
+model MasterSupplier {
+  id Int @id @default(autoincrement()) @map("id")
+
+  code    String  @map("code") // ex: MYR
+  name    String  @map("name") // ex: Mayora
+  phone   String? @map("phone")
+  address String? @map("address")
+  email   String? @map("email")
+
+  masterItems          MasterItem[]
+  transactionPurchases TransactionPurchase[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("master_suppliers")
+}
+
+// untuk sebagai autocomplete di master item variant
+model MasterUnit {
+  id Int @id @default(autoincrement()) @map("id")
+
+  unit String @map("unit") // PCS, PACK, dll
+  name String @map("name") // Piece, Pack, dll
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("master_units")
+}
+
+model MasterMemberCategory {
+  id Int @id @default(autoincrement()) @map("id")
+
+  code  String @map("code") // ex: REG, VIP, dll
+  name  String @map("name") // ex: Regular, Premium, dll
+  color String @map("color") @db.Char(6) // ex: "FF0000"
+
+  members Member[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("master_member_categories")
+}
+
+model Member {
+  id Int @id @default(autoincrement()) @map("id")
+
+  code String @map("code") // ex: 6285123456789
+  name String @map("name") // ex: Budi Santoso
+
+  phone   String? @map("phone") // ex: 6285123456789
+  email   String? @map("email") // ex: [EMAIL_ADDRESS]
+  address String? @map("address") @db.Text() // ex: Jl. Contoh No. 123
+
+  masterMemberCategoryId Int                  @map("master_member_category_id")
+  masterMemberCategory   MasterMemberCategory @relation(fields: [masterMemberCategoryId], references: [id])
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("members")
+}
+
+// pembelian, 1 pembelian ada banyak item
+model TransactionPurchase {
+  id Int @id @default(autoincrement()) @map("id")
+
+  invoiceNumber   String   @map("invoice_number") // ex: TP-2026-001
+  transactionDate DateTime @map("transaction_date") // ex: 2026-01-26
+  dueDate         DateTime @map("due_date") // ex: 2026-01-26
+  notes           String   @default("") @map("notes") @db.Text()
+
+  // recorded
+  recordedSubTotalAmount Int @map("recorded_sub_total_amount") // denormalize dari amount setiap item
+  recordedDiscountAmount Int @map("recorded_discount_amount") // denormalize dari setiap item discount
+  recordedTaxAmount      Int @map("recorded_tax_amount") // denormalize dari tax
+  recordedTotalAmount    Int @map("recorded_total_amount") // denormalize hasil akhir
+
+  masterSupplierId Int            @map("master_supplier_id")
+  masterSupplier   MasterSupplier @relation(fields: [masterSupplierId], references: [id])
+
+  branchId Int    @map("branch_id")
+  branch   Branch @relation(fields: [branchId], references: [id])
+
+  // relation
+  transactionPurchaseItems TransactionPurchaseItem[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("transaction_purchases")
+}
+
+// setiap item pembelian merepresentasikan 1 barang dengan amount tergantung variant
+model TransactionPurchaseItem {
+  id Int @id @default(autoincrement()) @map("id")
+
+  transactionPurchaseId Int                 @map("transaction_purchase_id")
+  transactionPurchase   TransactionPurchase @relation(fields: [transactionPurchaseId], references: [id])
+
+  masterItemId Int        @map("master_item_id")
+  masterItem   MasterItem @relation(fields: [masterItemId], references: [id])
+
+  masterItemVariantId Int               @map("master_item_variant_id")
+  masterItemVariant   MasterItemVariant @relation(fields: [masterItemVariantId], references: [id])
+
+  qty                Int @map("qty") // Beli berapa Pack?
+  recordedConversion Int @map("recorded_conversion") // 1 Pack isi berapa saat beli ini? (disimpan statis jaga2 kalau master berubah)
+  totalQty           Int @map("total_qty") // total qty (qty * recordedConversion)
+
+  recordedSubTotalAmount Int @map("recorded_sub_total_amount") // denormalize dari variantAmount * amount
+  recordedDiscountAmount Int @map("recorded_discount_amount") // denormalize dari setiap item discount
+  recordedTotalAmount    Int @map("recorded_total_amount") // denormalize dari amount setiap item
+
+  purchasePrice Int @map("purchase_price") // harga beli per 1 barang variant
+
+  // relation
+  // setiap item ada diskon masing masing
+  transactionPurchaseDiscounts TransactionPurchaseDiscount[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("transaction_purchase_items")
+}
+
+model TransactionPurchaseDiscount {
+  id Int @id @default(autoincrement()) @map("id")
+
+  order Int @map("order") // karena compound, maka ada urutan diskon mana yang dahulu di exec
+
+  transactionPurchaseItemId Int                     @map("transaction_purchase_item_id")
+  transactionPurchaseItem   TransactionPurchaseItem @relation(fields: [transactionPurchaseItemId], references: [id])
+
+  percentage     Int @map("percentage")
+  recordedAmount Int @map("recorded_amount")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("transaction_purchase_discounts")
+}
+
+model TransactionPurchaseReturn {
+  id Int @id @default(autoincrement()) @map("id")
+
+  returnDate DateTime @map("return_date")
+  dueDate    DateTime @map("due_date")
+  notes      String   @default("") @map("notes") @db.Text()
+
+  referenceNumber String @map("reference_number")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  // ignore dahulu, fokus ke purchase
+
+  @@map("transaction_purchase_returns")
+  @@ignore
+}
