@@ -69,13 +69,18 @@ export class ItemService extends BaseService {
     item: MasterItemWithIncludes,
     branchId?: number,
   ): ItemListResponse {
-    let stock = item.recordedGlobalStock;
+    let stock = 0;
 
     if (branchId) {
       const branchStock = item.itemBranches.find(
         (ib) => ib.branchId === branchId,
       );
       stock = branchStock?.recordedStock ?? 0;
+    } else {
+      stock = item.itemBranches.reduce(
+        (total, variant) => total + variant.recordedStock,
+        0,
+      );
     }
 
     return {
@@ -197,7 +202,6 @@ export class ItemService extends BaseService {
         masterItemCategoryId: data.masterItemCategoryId,
         isActive: data.isActive,
         recordedBuyPrice: 0,
-        recordedGlobalStock: 0,
         masterItemVariants: {
           create: data.masterItemVariants.map((v) => ({
             code: v.code.toUpperCase(),
