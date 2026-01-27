@@ -80,11 +80,11 @@ export class UserService extends BaseService {
     });
 
     if (!user) {
-      throw new UnauthorizedError({ message: "Username atau password salah" });
+      throw new BadRequestError("Username atau password salah");
     }
 
     if (!user.isActive) {
-      throw new UnauthorizedError({ message: "User tidak aktif" });
+      throw new BadRequestError("User tidak aktif");
     }
 
     const isPasswordValid = await this.password.verify(
@@ -93,7 +93,7 @@ export class UserService extends BaseService {
     );
 
     if (!isPasswordValid) {
-      throw new UnauthorizedError({ message: "Username atau password salah" });
+      throw new BadRequestError("Username atau password salah");
     }
 
     const token = await this.jwt.sign({

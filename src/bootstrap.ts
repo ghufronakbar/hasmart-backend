@@ -10,6 +10,11 @@ import { UserRouter } from "./modules/app/user/user.route";
 import { UserController } from "./modules/app/user/user.controller";
 import { UserService } from "./modules/app/user/user.service";
 
+// Item Category Module
+import { ItemCategoryRouter } from "./modules/master/item-category/item-category.route";
+import { ItemCategoryController } from "./modules/master/item-category/item-category.controller";
+import { ItemCategoryService } from "./modules/master/item-category/item-category.service";
+
 // Common Services
 import { PrismaService } from "./modules/common/prisma/prisma.service";
 import { PasswordService } from "./modules/common/password/password.service";
@@ -37,8 +42,17 @@ const userService = new UserService(prismaService, passwordService, jwtService);
 const userController = new UserController(userService);
 const userRouter = new UserRouter(userController, jwtService);
 
+// init item-category module
+const itemCategoryService = new ItemCategoryService(prismaService);
+const itemCategoryController = new ItemCategoryController(itemCategoryService);
+const itemCategoryRouter = new ItemCategoryRouter(
+  itemCategoryController,
+  jwtService,
+);
+
 // use routers
 api.use("/app/branch", branchRouter.router);
 api.use("/app/user", userRouter.router);
+api.use("/master/item-category", itemCategoryRouter.router);
 
 export default api;

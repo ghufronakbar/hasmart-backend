@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 export const BranchBodySchema = z.object({
-  code: z.string(),
-  name: z.string(),
+  code: z.string().min(1),
+  name: z.string().min(1),
   address: z.string().optional().nullable(),
   phone: z.string().optional().nullable(),
   email: z.string().optional().nullable(),
