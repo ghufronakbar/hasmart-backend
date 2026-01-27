@@ -1,119 +1,128 @@
-# Module Transaction.Sales (Revised)
+# Transaction Sales Module (POS)
 
-## 1. Overview
+Module untuk mengelola transaksi penjualan kasir (TransactionSales).
 
-**TransactionSalesService** adalah service inti untuk operasional kasir (Point of Sales). Service ini menangani penjualan barang dari cabang ke customer. Transaksi ini akan **mengurangi stok** gudang.
+---
 
-## 2. Dependencies
+## Overview
 
-- **RefreshStockService:** `src/modules/transaction/refresh-stock/refresh-stock.service.ts` (Method: `refreshRealStock`).
-- **PrismaService:** Untuk database transaction.
-- **GeneratorUtil:** Helper untuk generate nomor invoice otomatis.
+Module ini menyediakan CRUD operations untuk penjualan barang di kasir dengan fitur:
 
-## 3. Input Data Shape (DTO Expectation)
+- **Auto-generated invoice number** format: `TS-{YYYYMMDD}-{NNNN}`
+- Nested item dengan variant conversion
+- Diskon bertingkat per item
+- Optional member (masterMemberId nullable)
+- Automatic stock refresh via `RefreshStockService`
+- Audit trail via `RecordAction`
 
-_Note: `invoiceNumber` digenerate oleh Backend._
+---
+
+## Files
+
+| File                  | Description                                                     |
+| --------------------- | --------------------------------------------------------------- |
+| `sales.controller.ts` | HTTP request/response handlers                                  |
+| `sales.service.ts`    | Business logic, invoice generation, calculations, stock refresh |
+| `sales.route.ts`      | Route definitions                                               |
+| `sales.validator.ts`  | Zod validation schemas                                          |
+
+---
+
+## Dependencies
+
+- `common/prisma` - Database access
+- `common/jwt` - Auth middleware
+- `transaction/refresh-stock` - Stock recalculation service
+
+---
+
+## API Endpoints
+
+### List Sales
+
+```
+GET /api/transaction/sales
+Authorization: Bearer <token>
+```
+
+**Query:** `search`, `page`, `limit`, `sort`, `sortBy`
+
+---
+
+### Get by ID
+
+```
+GET /api/transaction/sales/:salesId
+Authorization: Bearer <token>
+```
+
+---
+
+### Create Sales
+
+```
+POST /api/transaction/sales
+Authorization: Bearer <token>
+```
+
+**Body:**
 
 ```json
 {
   "branchId": 1,
-  "transactionDate": "2026-01-27T10:30:00Z", // Waktu transaksi
   "notes": "Customer minta bon kosong",
-  "masterMemberId": 101, // Optional (Nullable)
+  "memberCode": "MBR001",
   "items": [
     {
       "masterItemId": 10,
-      "masterItemVariantId": 5, // Variant: Pack
+      "masterItemVariantId": 5,
       "qty": 2,
-      "salesPrice": 55000, // Harga jual saat transaksi
-      "discounts": [
-        // Diskon per item (Promo produk)
-        { "percentage": 10 }
-      ]
+      "salesPrice": 55000,
+      "discounts": [{ "percentage": 10 }]
     }
   ]
 }
 ```
 
-## 4. Logic Flow & Business Rules
+> **Note:** `invoiceNumber` tidak diinput, akan di-generate otomatis oleh backend. `memberCode` bisa dikosongkan untuk customer walk-in.
 
-### A. Invoice Generation
+---
 
-Generate **Invoice Number** yang unik sebelum simpan.
+### Update Sales
 
-- Format: `TS-{YYYYMMDD}-{SEQUENCE}` (Contoh: `TS-20260127-0001`).
-
-### B. Validation Phase
-
-1. **Unique Items Check:** Validasi bahwa `masterItemVariantId` dalam payload `items` harus unique.
-2. **Existence Check:**
-
-- Query `masterItemVariant` (filter `deletedAt: null`).
-- Validasi kelengkapan data.
-- Simpan data variant (terutama `amount` konversi) ke dalam Map.
-
-### C. Calculation & Transformation Phase
-
-Lakukan mapping payload menjadi object Prisma.
-
-**1. Item Calculation (`TransactionSalesItem`):**
-
-- **Conversion:** Ambil `amount` dari MasterVariant -> `recordedConversion`.
-- **Total Qty:** `payload.qty` \* `recordedConversion`.
-- **Financials:**
-- `recordedSubTotalAmount` = `payload.qty` \* `payload.salesPrice`.
-- **Loop Discounts:**
-- Iterasi `discounts`.
-- Assign `orderIndex` (1, 2, ...).
-- Hitung nominal diskon.
-- `recordedDiscountAmount` = Total diskon item.
-
-- `recordedTotalAmount` = `recordedSubTotalAmount` - `recordedDiscountAmount`.
-
-**2. Header Calculation (`TransactionSales`):**
-
-- `recordedSubTotalAmount` = Sum of all items' `recordedSubTotalAmount`.
-- `recordedDiscountAmount` = Sum of all items' `recordedDiscountAmount`.
-- `recordedTotalAmount` = `recordedSubTotalAmount` - `recordedDiscountAmount`.
-
-### D. Database Transaction (Atomic Operation)
-
-Gunakan `prisma.$transaction`:
-
-1. **CRUD Operation:**
-
-- **Create:**
-
-```typescript
-prisma.transactionSales.create({
-  data: {
-    invoiceNumber: generatedInvoiceNumber,
-    // ... header fields calculated above
-    transactionSalesItems: {
-      create: items.map((item) => ({
-        // ... item fields
-        transactionSalesDiscounts: {
-          create: item.discounts.map((d, index) => ({
-            percentage: d.percentage,
-            recordedAmount: d.calculatedAmount,
-            orderIndex: index + 1,
-          })),
-        },
-      })),
-    },
-  },
-});
+```
+PUT /api/transaction/sales/:salesId
+Authorization: Bearer <token>
 ```
 
-- **Update:** Gunakan strategi _Delete (Items) then Insert (Items)_. Keep invoice number lama.
-- **Delete:** Soft delete.
+---
 
-2. **Post-Process (Parallel Execution):**
+### Delete Sales (Soft Delete)
 
-- **Refresh Stock:** Panggil `RefreshStockService.refreshRealStock` (Sales = Stock Berkurang).
-- **Record Action:** Insert ke tabel `RecordAction` (Type: `TRANSACTION_SALES`).
+```
+DELETE /api/transaction/sales/:salesId
+Authorization: Bearer <token>
+```
 
-## 5. Security & Notes
+---
 
-- **Middleware:** Wajib Auth.
-- **Performance:** Optimasi query variant karena High Traffic.
+## Business Rules
+
+1. **Invoice Generation:** `TS-{YYYYMMDD}-{SEQUENCE}` per branch per hari
+2. **Unique Items:** Setiap `masterItemVariantId` harus unique dalam 1 transaksi
+3. **Conversion:** `totalQty` = `qty` × `recordedConversion` (dari variant.amount)
+4. **Diskon Bertingkat:** Dihitung secara cascading
+5. **Header Calculation:**
+   - `recordedSubTotalAmount` = Σ item.recordedSubTotalAmount
+   - `recordedDiscountAmount` = Σ item.recordedDiscountAmount
+   - `recordedTotalAmount` = subTotal - discount
+6. **Stock Refresh:** Otomatis trigger `RefreshStockService.refreshRealStock()`
+7. **Audit:** Setiap CREATE/UPDATE/DELETE tercatat di `RecordAction`
+
+---
+
+## Stock Impact
+
+- CREATE: Stock **berkurang** (barang keluar dari gudang ke customer)
+- DELETE: Stock **bertambah** (pembatalan penjualan)
+- UPDATE: Refresh stock untuk item lama dan baru
