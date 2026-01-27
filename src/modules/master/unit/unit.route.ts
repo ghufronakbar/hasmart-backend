@@ -1,15 +1,15 @@
-import { BranchController } from "./branch.controller";
+import { UnitController } from "./unit.controller";
 import { asyncHandler } from "../../../middleware/error-handler";
 import { validateHandler } from "../../../middleware/validate-handler";
 import { BaseRouter } from "../../../base/base-router";
-import { BranchBodySchema, BranchParamsSchema } from "./brach.validator";
+import { UnitBodySchema, UnitParamsSchema } from "./unit.validator";
 import { useFilter } from "../../../middleware/use-filter";
 import { useAuth } from "../../../middleware/use-auth";
 import { JwtService } from "../../common/jwt/jwt.service";
 
-export class BranchRouter extends BaseRouter {
+export class UnitRouter extends BaseRouter {
   constructor(
-    private controller: BranchController,
+    private controller: UnitController,
     private jwtService: JwtService,
   ) {
     super();
@@ -20,44 +20,45 @@ export class BranchRouter extends BaseRouter {
     this.router.get(
       "/",
       useAuth(this.jwtService),
-      useFilter(),
+      useFilter(["unit", "name"]),
       asyncHandler(
-        async (req, res) => await this.controller.getAllBranches(req, res),
+        async (req, res) => await this.controller.getAllUnits(req, res),
       ),
     );
 
     this.router.get(
-      "/:branchId",
+      "/:unitId",
       useAuth(this.jwtService),
-      validateHandler({ params: BranchParamsSchema }),
+      validateHandler({ params: UnitParamsSchema }),
       asyncHandler(
-        async (req, res) => await this.controller.getBranchById(req, res),
+        async (req, res) => await this.controller.getUnitById(req, res),
       ),
     );
 
     this.router.post(
       "/",
       useAuth(this.jwtService),
-      validateHandler({ body: BranchBodySchema }),
+      validateHandler({ body: UnitBodySchema }),
       asyncHandler(
-        async (req, res) => await this.controller.createBranch(req, res),
+        async (req, res) => await this.controller.createUnit(req, res),
       ),
     );
 
     this.router.put(
-      "/:branchId",
+      "/:unitId",
       useAuth(this.jwtService),
-      validateHandler({ params: BranchParamsSchema, body: BranchBodySchema }),
+      validateHandler({ params: UnitParamsSchema, body: UnitBodySchema }),
       asyncHandler(
-        async (req, res) => await this.controller.updateBranch(req, res),
+        async (req, res) => await this.controller.updateUnit(req, res),
       ),
     );
+
     this.router.delete(
-      "/:branchId",
+      "/:unitId",
       useAuth(this.jwtService),
-      validateHandler({ params: BranchParamsSchema }),
+      validateHandler({ params: UnitParamsSchema }),
       asyncHandler(
-        async (req, res) => await this.controller.deleteBranch(req, res),
+        async (req, res) => await this.controller.deleteUnit(req, res),
       ),
     );
   }

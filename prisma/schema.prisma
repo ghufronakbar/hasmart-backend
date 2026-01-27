@@ -93,6 +93,9 @@ model MasterItem {
   // global (recorded from transaction)
   recordedBuyPrice Int @map("recorded_buy_price")
 
+  // global (recorded stock | from all item branch)
+  recordedGlobalStock Int @map("recorded_global_stock")
+
   // mapping item per cabang (ex: kebutuhan stok)
   itemBranches ItemBranch[]
 
@@ -132,10 +135,9 @@ model ItemBranch {
 model MasterItemVariant {
   id Int @id @default(autoincrement()) @map("id")
 
-  // CODE DISINI. Bisa Null (kalau barang curah/jasa), tapi Unique jika ada.
-  code   String? @map("code")
-  unit   String  @map("unit") // PCS, PACK, BOX
-  amount Int     @map("amount") // Konversi ke base unit. Base = 1
+  code   String @unique @map("code") // code bisa dari barcode atau input manual pada realcase harus unique
+  unit   String @map("unit") // PCS, PACK, BOX
+  amount Int    @map("amount") // Konversi ke base unit. Base = 1
 
   recordedBuyPrice Int @map("recorded_buy_price") // harga beli yang di record dari transaksi
   sellPrice        Int @map("sell_price") // karena harga per pcs dan pack beda
