@@ -11,7 +11,6 @@ export class RefreshStockService extends BaseService {
    * dan mengupdate nilai ItemBranch.recordedStock
    */
   refreshRealStock = async (branchId: number, masterItemId: number) => {
-    this.prisma.$transaction(async (tx) => {});
     // Jalankan semua query agregasi secara paralel untuk performa
     const [
       purchases,
@@ -21,6 +20,8 @@ export class RefreshStockService extends BaseService {
       transfersIn,
       transfersOut,
       adjustments,
+      sells,
+      sellReturns,
     ] = await Promise.all([
       // 1. Total Pembelian (+)
       this.prisma.transactionPurchaseItem.aggregate({
@@ -48,7 +49,7 @@ export class RefreshStockService extends BaseService {
         },
       }),
 
-      // 3. Total Penjualan (-)
+      // 3. Total Penjualan POS (-)
       this.prisma.transactionSalesItem.aggregate({
         _sum: { totalQty: true },
         where: {
@@ -61,7 +62,7 @@ export class RefreshStockService extends BaseService {
         },
       }),
 
-      // 4. Total Retur Penjualan (+)
+      // 4. Total Retur Penjualan POS (+)
       this.prisma.transactionSalesReturnItem.aggregate({
         _sum: { totalQty: true },
         where: {
@@ -103,13 +104,41 @@ export class RefreshStockService extends BaseService {
           deletedAt: null,
         },
       }),
+
+      // 8. Total Penjualan B2B (Sell) (-)
+      this.prisma.transactionSellItem.aggregate({
+        _sum: { totalQty: true },
+        where: {
+          masterItemId: masterItemId,
+          deletedAt: null,
+          transactionSell: {
+            branchId: branchId,
+            deletedAt: null,
+          },
+        },
+      }),
+
+      // 9. Total Retur Penjualan B2B (Sell Return) (+)
+      this.prisma.transactionSellReturnItem.aggregate({
+        _sum: { totalQty: true },
+        where: {
+          masterItemId: masterItemId,
+          deletedAt: null,
+          transactionSellReturn: {
+            branchId: branchId,
+            deletedAt: null,
+          },
+        },
+      }),
     ]);
 
     // Ekstrak nilai (handle null jika tidak ada data)
     const totalPurchase = purchases._sum.totalQty ?? 0;
     const totalPurchaseReturn = purchaseReturns._sum.totalQty ?? 0;
+
     const totalSales = sales._sum.totalQty ?? 0;
     const totalSalesReturn = salesReturns._sum.totalQty ?? 0;
+
     const totalTransferIn = transfersIn._sum.totalQty ?? 0;
     const totalTransferOut = transfersOut._sum.totalQty ?? 0;
 
@@ -117,18 +146,33 @@ export class RefreshStockService extends BaseService {
     // sudah positif (stok lebih) atau negatif (stok kurang) di database
     const totalAdjustment = adjustments._sum.totalGapAmount ?? 0;
 
+    const totalSell = sells._sum.totalQty ?? 0;
+    const totalSellReturn = sellReturns._sum.totalQty ?? 0;
+
     // Rumus Stok Akhir
-    // Masuk: Purchase + Sales Return + Transfer In + Adjustment (jika positif)
-    // Keluar: Sales + Purchase Return + Transfer Out + Adjustment (jika negatif)
+    // Masuk (IN):
+    // - Purchase
+    // - Sales Return (POS)
+    // - Sell Return (B2B)
+    // - Transfer In
+    // - Adjustment (jika positif)
+
+    // Keluar (OUT):
+    // - Sales (POS)
+    // - Sell (B2B)
+    // - Purchase Return
+    // - Transfer Out
+    // - Adjustment (jika negatif)
+
     const finalStock =
       totalPurchase +
       totalSalesReturn +
+      totalSellReturn +
       totalTransferIn +
       totalAdjustment -
-      (totalSales + totalPurchaseReturn + totalTransferOut);
+      (totalSales + totalSell + totalPurchaseReturn + totalTransferOut);
 
     // Update ke ItemBranch (Gunakan Upsert untuk jaga-jaga jika record belum ada)
-    // Walaupun idealnya record ItemBranch harusnya sudah ada jika transaksi ada
     const updatedItemBranch = await this.prisma.itemBranch.upsert({
       where: {
         masterItemId_branchId: {
