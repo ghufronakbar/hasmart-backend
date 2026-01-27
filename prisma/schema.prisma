@@ -197,7 +197,7 @@ model MasterMemberCategory {
   name  String @map("name") // ex: Regular, Premium, dll
   color String @map("color") @db.Char(6) // ex: "FF0000"
 
-  members Member[]
+  masterMembers MasterMember[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
@@ -206,7 +206,7 @@ model MasterMemberCategory {
   @@map("master_member_categories")
 }
 
-model Member {
+model MasterMember {
   id Int @id @default(autoincrement()) @map("id")
 
   code String @map("code") // ex: 6285123456789
@@ -223,7 +223,7 @@ model Member {
   updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
-  @@map("members")
+  @@map("master_members")
 }
 
 // pembelian, 1 pembelian ada banyak item

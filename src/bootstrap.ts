@@ -30,6 +30,16 @@ import { UnitRouter } from "./modules/master/unit/unit.route";
 import { UnitController } from "./modules/master/unit/unit.controller";
 import { UnitService } from "./modules/master/unit/unit.service";
 
+// Member Category Module
+import { MemberCategoryRouter } from "./modules/master/member-category/member-category.route";
+import { MemberCategoryController } from "./modules/master/member-category/member-category.controller";
+import { MemberCategoryService } from "./modules/master/member-category/member-category.service";
+
+// Member Module
+import { MemberRouter } from "./modules/master/member/member.route";
+import { MemberController } from "./modules/master/member/member.controller";
+import { MemberService } from "./modules/master/member/member.service";
+
 // Common Services
 import { PrismaService } from "./modules/common/prisma/prisma.service";
 import { PasswordService } from "./modules/common/password/password.service";
@@ -80,6 +90,21 @@ const unitService = new UnitService(prismaService);
 const unitController = new UnitController(unitService);
 const unitRouter = new UnitRouter(unitController, jwtService);
 
+// init member-category module
+const memberCategoryService = new MemberCategoryService(prismaService);
+const memberCategoryController = new MemberCategoryController(
+  memberCategoryService,
+);
+const memberCategoryRouter = new MemberCategoryRouter(
+  memberCategoryController,
+  jwtService,
+);
+
+// init member module
+const memberService = new MemberService(prismaService);
+const memberController = new MemberController(memberService);
+const memberRouter = new MemberRouter(memberController, jwtService);
+
 // use routers
 api.use("/app/branch", branchRouter.router);
 api.use("/app/user", userRouter.router);
@@ -87,5 +112,7 @@ api.use("/master/item-category", itemCategoryRouter.router);
 api.use("/master/item", itemRouter.router);
 api.use("/master/supplier", supplierRouter.router);
 api.use("/master/unit", unitRouter.router);
+api.use("/master/member-category", memberCategoryRouter.router);
+api.use("/master/member", memberRouter.router);
 
 export default api;
