@@ -63,6 +63,26 @@ import { SalesReturnRouter } from "./modules/transaction/sales-return/sales-retu
 import { SalesReturnController } from "./modules/transaction/sales-return/sales-return.controller";
 import { SalesReturnService } from "./modules/transaction/sales-return/sales-return.service";
 
+// Sell Module
+import { SellRouter } from "./modules/transaction/sell/sell.route";
+import { SellController } from "./modules/transaction/sell/sell.controller";
+import { SellService } from "./modules/transaction/sell/sell.service";
+
+// Sell Return Module
+import { SellReturnRouter } from "./modules/transaction/sell-return/sell-return.route";
+import { SellReturnController } from "./modules/transaction/sell-return/sell-return.controller";
+import { SellReturnService } from "./modules/transaction/sell-return/sell-return.service";
+
+// Transfer Module
+import { TransferRouter } from "./modules/transaction/transfer/transfer.route";
+import { TransferController } from "./modules/transaction/transfer/transfer.controller";
+import { TransferService } from "./modules/transaction/transfer/transfer.service";
+
+// Adjust Stock Module
+import { AdjustStockRouter } from "./modules/transaction/adjust-stock/adjust-stock.route";
+import { AdjustStockController } from "./modules/transaction/adjust-stock/adjust-stock.controller";
+import { AdjustStockService } from "./modules/transaction/adjust-stock/adjust-stock.service";
+
 // Common Services
 import { PrismaService } from "./modules/common/prisma/prisma.service";
 import { PasswordService } from "./modules/common/password/password.service";
@@ -165,6 +185,35 @@ const salesReturnRouter = new SalesReturnRouter(
   jwtService,
 );
 
+// init sell module
+const sellService = new SellService(prismaService, refreshStockService);
+const sellController = new SellController(sellService);
+const sellRouter = new SellRouter(sellController, jwtService);
+
+// init sell-return module
+const sellReturnService = new SellReturnService(
+  prismaService,
+  refreshStockService,
+);
+const sellReturnController = new SellReturnController(sellReturnService);
+const sellReturnRouter = new SellReturnRouter(sellReturnController, jwtService);
+
+// init transfer module
+const transferService = new TransferService(prismaService, refreshStockService);
+const transferController = new TransferController(transferService);
+const transferRouter = new TransferRouter(transferController, jwtService);
+
+// init adjust-stock module
+const adjustStockService = new AdjustStockService(
+  prismaService,
+  refreshStockService,
+);
+const adjustStockController = new AdjustStockController(adjustStockService);
+const adjustStockRouter = new AdjustStockRouter(
+  adjustStockController,
+  jwtService,
+);
+
 // use routers
 api.use("/app/branch", branchRouter.router);
 api.use("/app/user", userRouter.router);
@@ -178,5 +227,9 @@ api.use("/transaction/purchase", purchaseRouter.router);
 api.use("/transaction/purchase-return", purchaseReturnRouter.router);
 api.use("/transaction/sales", salesRouter.router);
 api.use("/transaction/sales-return", salesReturnRouter.router);
+api.use("/transaction/sell", sellRouter.router);
+api.use("/transaction/sell-return", sellReturnRouter.router);
+api.use("/transaction/transfer", transferRouter.router);
+api.use("/transaction/adjust-stock", adjustStockRouter.router);
 
 export default api;

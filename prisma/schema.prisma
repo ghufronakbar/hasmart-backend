@@ -123,7 +123,7 @@ model MasterItem {
   transactionSellReturnItems TransactionSellReturnItem[]
 
   // track transfer
-  transactionTransfers TransactionTransfer[]
+  transactionTransferItems TransactionTransferItem[]
 
   // track adjustment
   transactionAdjustments TransactionAdjustment[]
@@ -184,7 +184,7 @@ model MasterItemVariant {
   transactionSellReturnItems TransactionSellReturnItem[]
 
   // track transfer
-  transactionTransfers TransactionTransfer[]
+  transactionTransferItems TransactionTransferItem[]
 
   // track adjustment
   transactionAdjustments TransactionAdjustment[]
@@ -621,14 +621,14 @@ model TransactionSalesReturnDiscount {
 
 // [TRANSACTION SELL]
 // Penjualan B2B (Grosir/Canvas/Kirim ke Toko Lain)
-// Bedanya dengan Sales (POS): Ada Due Date, Invoice Formal, dan Pajak biasanya lebih eksplisit
+// Bedanya dengan Sales (POS): Ada Due Date, Invoice Formal
 
 model TransactionSell {
   id Int @id @default(autoincrement()) @map("id")
 
-  invoiceNumber   String   @map("invoice_number") // ex: INV-2026-001
-  transactionDate DateTime @map("transaction_date") // Tanggal Transaksi
-  dueDate         DateTime @map("due_date") // Tanggal Jatuh Tempo
+  invoiceNumber   String   @map("invoice_number") // ex: INV-2026-001 Generated (Karena kita yang kirim, sistem tentukan)
+  transactionDate DateTime @map("transaction_date") // Tanggal Transaksi (Inputable)
+  dueDate         DateTime @map("due_date") // Tanggal Jatuh Tempo (Inputable)
   notes           String   @default("") @map("notes") @db.Text()
 
   // recorded
@@ -674,7 +674,7 @@ model TransactionSellItem {
   recordedDiscountAmount Int @map("recorded_discount_amount")
   recordedTotalAmount    Int @map("recorded_total_amount")
 
-  sellPrice Int @map("sell_price") // Harga jual B2B mungkin beda dengan POS
+  sellPrice Int @map("sell_price")
 
   transactionSellDiscounts TransactionSellDiscount[]
 
@@ -790,24 +790,26 @@ model TransactionSellReturnDiscount {
 
 // [TRANSACTION TRANSFER]
 // untuk stock dihitung tergantung branch ada di from atau to
+// [TRANSACTION TRANSFER]
+// Perpindahan stok antar cabang. 
+// Menggunakan struktur Header-Detail agar 1 pengiriman bisa memuat banyak items.
+
 model TransactionTransfer {
   id Int @id @default(autoincrement()) @map("id")
 
-  masterItemId Int        @map("master_item_id")
-  masterItem   MasterItem @relation(fields: [masterItemId], references: [id])
+  // Header Info
+  transactionDate DateTime @map("transaction_date") // Tanggal pengiriman
+  notes           String   @default("") @map("notes") @db.Text() // Ex: "Dikirim via Supir Budi"
 
-  masterItemVariantId Int               @map("master_item_variant_id")
-  masterItemVariant   MasterItemVariant @relation(fields: [masterItemVariantId], references: [id])
-
-  qty                Int @map("qty") // Transfer berapa Pack?
-  recordedConversion Int @map("recorded_conversion") // 1 Pack isi berapa saat transfer ini? (disimpan statis jaga2 kalau master berubah)
-  totalQty           Int @map("total_qty") // total qty (qty * recordedConversion)
-
+  // Location
   fromId Int    @map("from_id")
   from   Branch @relation("FromTransfer", fields: [fromId], references: [id])
 
   toId Int    @map("to_id")
   to   Branch @relation("ToTransfer", fields: [toId], references: [id])
+
+  // Relation
+  transactionTransferItems TransactionTransferItem[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
@@ -816,10 +818,35 @@ model TransactionTransfer {
   @@map("transaction_transfers")
 }
 
+model TransactionTransferItem {
+  id Int @id @default(autoincrement()) @map("id")
+
+  transactionTransferId Int                 @map("transaction_transfer_id")
+  transactionTransfer   TransactionTransfer @relation(fields: [transactionTransferId], references: [id])
+
+  masterItemId Int        @map("master_item_id")
+  masterItem   MasterItem @relation(fields: [masterItemId], references: [id])
+
+  masterItemVariantId Int               @map("master_item_variant_id")
+  masterItemVariant   MasterItemVariant @relation(fields: [masterItemVariantId], references: [id])
+
+  qty                Int @map("qty") // Transfer berapa Pack?
+  recordedConversion Int @map("recorded_conversion") // Snapshot konversi saat transfer
+  totalQty           Int @map("total_qty") // qty * recordedConversion
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("transaction_transfer_items")
+}
+
 // [TRANSACTION ADJUSTMENT]
 // untuk penyesuaian stok semisal ada human error, bergantung pada total gap amount (entah itu positif atau negatif)
 model TransactionAdjustment {
   id Int @id @default(autoincrement()) @map("id")
+
+  notes String @default("") @map("notes") @db.Text()
 
   masterItemId Int        @map("master_item_id")
   masterItem   MasterItem @relation(fields: [masterItemId], references: [id])

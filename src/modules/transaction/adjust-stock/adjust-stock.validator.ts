@@ -1,0 +1,22 @@
+import { z } from "zod";
+
+const AdjustmentItemSchema = z.object({
+  masterItemId: z.number().int().positive(),
+  masterItemVariantId: z.number().int().positive(),
+  actualQty: z.number().int().min(0), // Jumlah fisik yang dihitung user
+});
+
+export const AdjustmentBodySchema = z.object({
+  branchId: z.number().int().positive(),
+  notes: z.string().optional().default(""),
+  items: z.array(AdjustmentItemSchema).min(1, "Minimal harus ada 1 item"),
+});
+
+export type AdjustmentBodyType = z.infer<typeof AdjustmentBodySchema>;
+export type AdjustmentItemType = z.infer<typeof AdjustmentItemSchema>;
+
+export const AdjustmentParamsSchema = z.object({
+  adjustmentId: z.coerce.number(),
+});
+
+export type AdjustmentParamsType = z.infer<typeof AdjustmentParamsSchema>;

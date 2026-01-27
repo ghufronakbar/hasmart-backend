@@ -28,10 +28,10 @@ export class RefreshStockService extends BaseService {
         _sum: { totalQty: true },
         where: {
           masterItemId: masterItemId,
-          deletedAt: null, // Item tidak dihapus
+          deletedAt: null,
           transactionPurchase: {
             branchId: branchId,
-            deletedAt: null, // Transaksi induk tidak dihapus
+            deletedAt: null,
           },
         },
       }),
@@ -75,23 +75,31 @@ export class RefreshStockService extends BaseService {
         },
       }),
 
-      // 5. Transfer Masuk (+)
-      this.prisma.transactionTransfer.aggregate({
+      // 5. Transfer Masuk (+) [UPDATED SCHEMA]
+      // Cek ke tabel Item, lalu filter berdasarkan Header (toId)
+      this.prisma.transactionTransferItem.aggregate({
         _sum: { totalQty: true },
         where: {
           masterItemId: masterItemId,
-          toId: branchId, // Cabang sebagai penerima
           deletedAt: null,
+          transactionTransfer: {
+            toId: branchId, // Cabang sebagai penerima
+            deletedAt: null,
+          },
         },
       }),
 
-      // 6. Transfer Keluar (-)
-      this.prisma.transactionTransfer.aggregate({
+      // 6. Transfer Keluar (-) [UPDATED SCHEMA]
+      // Cek ke tabel Item, lalu filter berdasarkan Header (fromId)
+      this.prisma.transactionTransferItem.aggregate({
         _sum: { totalQty: true },
         where: {
           masterItemId: masterItemId,
-          fromId: branchId, // Cabang sebagai pengirim
           deletedAt: null,
+          transactionTransfer: {
+            fromId: branchId, // Cabang sebagai pengirim
+            deletedAt: null,
+          },
         },
       }),
 
