@@ -58,6 +58,11 @@ import { SalesRouter } from "./modules/transaction/sales/sales.route";
 import { SalesController } from "./modules/transaction/sales/sales.controller";
 import { SalesService } from "./modules/transaction/sales/sales.service";
 
+// Sales Return Module
+import { SalesReturnRouter } from "./modules/transaction/sales-return/sales-return.route";
+import { SalesReturnController } from "./modules/transaction/sales-return/sales-return.controller";
+import { SalesReturnService } from "./modules/transaction/sales-return/sales-return.service";
+
 // Common Services
 import { PrismaService } from "./modules/common/prisma/prisma.service";
 import { PasswordService } from "./modules/common/password/password.service";
@@ -149,6 +154,17 @@ const salesService = new SalesService(prismaService, refreshStockService);
 const salesController = new SalesController(salesService);
 const salesRouter = new SalesRouter(salesController, jwtService);
 
+// init sales-return module
+const salesReturnService = new SalesReturnService(
+  prismaService,
+  refreshStockService,
+);
+const salesReturnController = new SalesReturnController(salesReturnService);
+const salesReturnRouter = new SalesReturnRouter(
+  salesReturnController,
+  jwtService,
+);
+
 // use routers
 api.use("/app/branch", branchRouter.router);
 api.use("/app/user", userRouter.router);
@@ -161,5 +177,6 @@ api.use("/master/member", memberRouter.router);
 api.use("/transaction/purchase", purchaseRouter.router);
 api.use("/transaction/purchase-return", purchaseReturnRouter.router);
 api.use("/transaction/sales", salesRouter.router);
+api.use("/transaction/sales-return", salesReturnRouter.router);
 
 export default api;
