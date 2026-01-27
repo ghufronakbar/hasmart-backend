@@ -4,7 +4,7 @@ import { MemberCategoryBodyType } from "./member-category.validator";
 import { MemberCategoryResponse } from "./member-category.interface";
 import { BadRequestError, NotFoundError } from "../../../utils/error";
 import { FilterQueryType } from "src/middleware/use-filter";
-import { Prisma } from ".prisma/client";
+import { MasterMemberCategory, Prisma } from ".prisma/client";
 
 export class MemberCategoryService extends BaseService {
   constructor(private readonly prisma: PrismaService) {
@@ -45,7 +45,9 @@ export class MemberCategoryService extends BaseService {
     return args;
   }
 
-  private mapToResponse(item: any): MemberCategoryResponse {
+  private mapToResponse(
+    item: MasterMemberCategory & { _count: { masterMembers: number } },
+  ): MemberCategoryResponse {
     return {
       id: item.id,
       code: item.code,
@@ -65,7 +67,11 @@ export class MemberCategoryService extends BaseService {
       }),
     ]);
 
-    const mappedRows = rows.map((item) => this.mapToResponse(item));
+    const mappedRows = rows.map((item) =>
+      this.mapToResponse(
+        item as MasterMemberCategory & { _count: { masterMembers: number } },
+      ),
+    );
 
     const pagination = this.createPagination({
       total: count,
