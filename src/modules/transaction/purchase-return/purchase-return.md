@@ -1,0 +1,125 @@
+# Transaction Purchase Return Module
+
+Module untuk mengelola transaksi retur pembelian ke supplier (TransactionPurchaseReturn).
+
+---
+
+## Overview
+
+Module ini menyediakan CRUD operations untuk retur barang ke supplier dengan fitur:
+
+- Nested item dengan variant conversion
+- Diskon bertingkat per item
+- Automatic stock refresh via `RefreshStockService`
+- Audit trail via `RecordAction`
+
+**Note:** Module ini standalone (tidak memiliki FK ke TransactionPurchase), namun secara bisnis merujuk pada invoice pembelian sebelumnya.
+
+---
+
+## Files
+
+| File                            | Description                                 |
+| ------------------------------- | ------------------------------------------- |
+| `purchase-return.controller.ts` | HTTP request/response handlers              |
+| `purchase-return.service.ts`    | Business logic, calculations, stock refresh |
+| `purchase-return.route.ts`      | Route definitions                           |
+| `purchase-return.validator.ts`  | Zod validation schemas                      |
+
+---
+
+## Dependencies
+
+- `common/prisma` - Database access
+- `common/jwt` - Auth middleware
+- `transaction/refresh-stock` - Stock recalculation service
+
+---
+
+## API Endpoints
+
+### List Purchase Returns
+
+```
+GET /api/transaction/purchase-return
+Authorization: Bearer <token>
+```
+
+**Query:** `search`, `page`, `limit`, `sort`, `sortBy`
+
+---
+
+### Get by ID
+
+```
+GET /api/transaction/purchase-return/:purchaseReturnId
+Authorization: Bearer <token>
+```
+
+---
+
+### Create Purchase Return
+
+```
+POST /api/transaction/purchase-return
+Authorization: Bearer <token>
+```
+
+**Body:**
+
+```json
+{
+  "invoiceNumber": "RET-2026-001",
+  "transactionDate": "2026-01-28T00:00:00Z",
+  "dueDate": "2026-02-28T00:00:00Z",
+  "masterSupplierId": 1,
+  "branchId": 1,
+  "notes": "Barang rusak kemasan",
+  "taxAmount": 0,
+  "items": [
+    {
+      "masterItemId": 10,
+      "masterItemVariantId": 5,
+      "qty": 2,
+      "purchasePrice": 50000,
+      "discounts": [{ "percentage": 10 }]
+    }
+  ]
+}
+```
+
+---
+
+### Update Purchase Return
+
+```
+PUT /api/transaction/purchase-return/:purchaseReturnId
+Authorization: Bearer <token>
+```
+
+---
+
+### Delete Purchase Return (Soft Delete)
+
+```
+DELETE /api/transaction/purchase-return/:purchaseReturnId
+Authorization: Bearer <token>
+```
+
+---
+
+## Business Rules
+
+1. **Unique Items:** Setiap `masterItemVariantId` harus unique dalam 1 transaksi
+2. **Conversion:** `totalQty` = `qty` × `recordedConversion` (dari variant.amount)
+3. **Diskon Bertingkat:** Dihitung secara cascading
+4. **Stock Refresh:** Otomatis trigger `RefreshStockService.refreshRealStock()`
+5. **Audit:** Setiap CREATE/UPDATE/DELETE tercatat di `RecordAction`
+
+---
+
+## Stock Impact
+
+- CREATE: Stock **berkurang** (barang keluar kembali ke supplier)
+- DELETE: Stock **bertambah** (pembatalan retur)
+- UPDATE: Refresh stock untuk item lama dan baru

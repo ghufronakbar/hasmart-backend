@@ -297,6 +297,7 @@ model TransactionPurchase {
   // recorded
   recordedSubTotalAmount Int @map("recorded_sub_total_amount") // denormalize dari amount setiap item
   recordedDiscountAmount Int @map("recorded_discount_amount") // denormalize dari setiap item discount
+  recordedTaxPercentage  Int @map("recorded_tax_percentage") // denormalize dari tax
   recordedTaxAmount      Int @map("recorded_tax_amount") // denormalize dari tax
   recordedTotalAmount    Int @map("recorded_total_amount") // denormalize hasil akhir
 
@@ -382,6 +383,7 @@ model TransactionPurchaseReturn {
   recordedSubTotalAmount Int @map("recorded_sub_total_amount") // denormalize dari amount setiap item
   recordedDiscountAmount Int @map("recorded_discount_amount") // denormalize dari setiap item discount
   recordedTaxAmount      Int @map("recorded_tax_amount") // denormalize dari tax
+  recordedTaxPercentage  Int @map("recorded_tax_percentage") // denormalize dari tax
   recordedTotalAmount    Int @map("recorded_total_amount") // denormalize hasil akhir (anggapnya ini hasil akhir uang yang masuk kembali ke perusahaan)
 
   masterSupplierId Int            @map("master_supplier_id")
@@ -462,10 +464,9 @@ model TransactionSales {
   notes         String @default("") @map("notes") @db.Text()
 
   // recorded
-  recordedSubTotalAmount       Int @map("recorded_sub_total_amount") // denormalize dari amount setiap item
-  recordedDiscountAmount       Int @map("recorded_discount_amount") // denormalize dari setiap item discount
-  recordedAmountCustomDiscount Int @map("recorded_amount_custom_discount") // denormalize dari custom discount
-  recordedTotalAmount          Int @map("recorded_total_amount") // denormalize hasil akhir
+  recordedSubTotalAmount Int @map("recorded_sub_total_amount") // denormalize dari amount setiap item
+  recordedDiscountAmount Int @map("recorded_discount_amount") // denormalize dari setiap item discount
+  recordedTotalAmount    Int @map("recorded_total_amount") // denormalize hasil akhir
 
   masterMemberId Int?          @map("master_member_id")
   masterMember   MasterMember? @relation(fields: [masterMemberId], references: [id])
@@ -634,6 +635,7 @@ model TransactionSell {
   recordedSubTotalAmount Int @map("recorded_sub_total_amount")
   recordedDiscountAmount Int @map("recorded_discount_amount")
   recordedTaxAmount      Int @map("recorded_tax_amount") // Biasanya B2B ada pajak terpisah
+  recordedTaxPercentage  Int @map("recorded_tax_percentage") // denormalize dari tax
   recordedTotalAmount    Int @map("recorded_total_amount")
 
   masterMemberId Int          @map("master_member_id") // Customer B2B wajib terdaftar
@@ -717,7 +719,9 @@ model TransactionSellReturn {
   recordedSubTotalAmount Int @map("recorded_sub_total_amount")
   recordedDiscountAmount Int @map("recorded_discount_amount")
   recordedTaxAmount      Int @map("recorded_tax_amount")
-  recordedTotalAmount    Int @map("recorded_total_amount")
+  recordedTaxPercentage  Int @map("recorded_tax_percentage") // denormalize dari tax
+
+  recordedTotalAmount Int @map("recorded_total_amount")
 
   masterMemberId Int          @map("master_member_id")
   masterMember   MasterMember @relation(fields: [masterMemberId], references: [id])

@@ -1,0 +1,38 @@
+import { z } from "zod";
+
+const PurchaseReturnDiscountSchema = z.object({
+  percentage: z.number().int().min(0).max(100),
+});
+
+const PurchaseReturnItemSchema = z.object({
+  masterItemId: z.number().int().positive(),
+  masterItemVariantId: z.number().int().positive(),
+  qty: z.number().int().positive(),
+  purchasePrice: z.number().int().min(0),
+  discounts: z.array(PurchaseReturnDiscountSchema).optional().default([]),
+});
+
+export const PurchaseReturnBodySchema = z.object({
+  invoiceNumber: z.string().min(1),
+  transactionDate: z.coerce.date(),
+  dueDate: z.coerce.date(),
+  masterSupplierId: z.number().int().positive(),
+  branchId: z.number().int().positive(),
+  notes: z.string().optional().default(""),
+  taxAmount: z.number().int().min(0).optional().default(0),
+  items: z.array(PurchaseReturnItemSchema).min(1, "Minimal harus ada 1 item"),
+});
+
+export type PurchaseReturnBodyType = z.infer<typeof PurchaseReturnBodySchema>;
+export type PurchaseReturnItemType = z.infer<typeof PurchaseReturnItemSchema>;
+export type PurchaseReturnDiscountType = z.infer<
+  typeof PurchaseReturnDiscountSchema
+>;
+
+export const PurchaseReturnParamsSchema = z.object({
+  purchaseReturnId: z.coerce.number(),
+});
+
+export type PurchaseReturnParamsType = z.infer<
+  typeof PurchaseReturnParamsSchema
+>;

@@ -40,6 +40,19 @@ import { MemberRouter } from "./modules/master/member/member.route";
 import { MemberController } from "./modules/master/member/member.controller";
 import { MemberService } from "./modules/master/member/member.service";
 
+// Transaction Common Services
+import { RefreshStockService } from "./modules/transaction/refresh-stock/refresh-stock.service";
+
+// Purchase Module
+import { PurchaseRouter } from "./modules/transaction/purchase/purchase.route";
+import { PurchaseController } from "./modules/transaction/purchase/purchase.controller";
+import { PurchaseService } from "./modules/transaction/purchase/purchase.service";
+
+// Purchase Return Module
+import { PurchaseReturnRouter } from "./modules/transaction/purchase-return/purchase-return.route";
+import { PurchaseReturnController } from "./modules/transaction/purchase-return/purchase-return.controller";
+import { PurchaseReturnService } from "./modules/transaction/purchase-return/purchase-return.service";
+
 // Common Services
 import { PrismaService } from "./modules/common/prisma/prisma.service";
 import { PasswordService } from "./modules/common/password/password.service";
@@ -56,6 +69,9 @@ const cfg = new Config();
 const prismaService = new PrismaService();
 const passwordService = new PasswordService();
 const jwtService = new JwtService(cfg);
+
+// init transaction common services
+const refreshStockService = new RefreshStockService(prismaService);
 
 // init branch module
 const branchService = new BranchService(prismaService);
@@ -105,6 +121,24 @@ const memberService = new MemberService(prismaService);
 const memberController = new MemberController(memberService);
 const memberRouter = new MemberRouter(memberController, jwtService);
 
+// init purchase module
+const purchaseService = new PurchaseService(prismaService, refreshStockService);
+const purchaseController = new PurchaseController(purchaseService);
+const purchaseRouter = new PurchaseRouter(purchaseController, jwtService);
+
+// init purchase-return module
+const purchaseReturnService = new PurchaseReturnService(
+  prismaService,
+  refreshStockService,
+);
+const purchaseReturnController = new PurchaseReturnController(
+  purchaseReturnService,
+);
+const purchaseReturnRouter = new PurchaseReturnRouter(
+  purchaseReturnController,
+  jwtService,
+);
+
 // use routers
 api.use("/app/branch", branchRouter.router);
 api.use("/app/user", userRouter.router);
@@ -114,5 +148,7 @@ api.use("/master/supplier", supplierRouter.router);
 api.use("/master/unit", unitRouter.router);
 api.use("/master/member-category", memberCategoryRouter.router);
 api.use("/master/member", memberRouter.router);
+api.use("/transaction/purchase", purchaseRouter.router);
+api.use("/transaction/purchase-return", purchaseReturnRouter.router);
 
 export default api;

@@ -13,7 +13,7 @@ Service ini harus dieksekusi setiap kali ada proses `CREATE`, `UPDATE`, atau `DE
 
 ## 2. The Logic (Stock Formula)
 
-Perhitungan stok dilakukan dengan melakukan agregasi data dari 7 tabel transaksi secara paralel. Hanya data yang **tidak terhapus** (`deletedAt: null`) yang akan dihitung.
+Perhitungan stok dilakukan dengan melakukan agregasi data dari 9 tabel transaksi secara paralel. Hanya data yang **tidak terhapus** (`deletedAt: null`) yang akan dihitung.
 
 ### Rumus Perhitungan
 
@@ -29,6 +29,7 @@ Dimana komponennya adalah:
 2. `TransactionSalesReturn` (Retur Customer)
 3. `TransactionTransfer` (Transfer Masuk / _To Branch_)
 4. `TransactionAdjustment` (Penyesuaian Stok - jika nilai gap positif)
+5. `TransactionSellReturn` (Retur Penjualan B2B)
 
 **Pengeluaran (OUT):**
 
@@ -36,6 +37,7 @@ Dimana komponennya adalah:
 2. `TransactionPurchaseReturn` (Retur ke Supplier)
 3. `TransactionTransfer` (Transfer Keluar / _From Branch_)
 4. `TransactionAdjustment` (Penyesuaian Stok - jika nilai gap negatif)
+5. `TransactionSell` (Penjualan B2B)
 
 ---
 
@@ -59,7 +61,7 @@ Fungsi utama untuk melakukan rekalkulasi dan update database.
 
 #### Process Flow
 
-1.  **Parallel Aggregation:** Menjalankan `prisma.aggregate` ke 7 tabel terkait secara bersamaan menggunakan `Promise.all` untuk performa maksimal.
+1.  **Parallel Aggregation:** Menjalankan `prisma.aggregate` ke 9 tabel terkait secara bersamaan menggunakan `Promise.all` untuk performa maksimal.
 2.  **Filter `deletedAt`:**
     - Memastikan item transaksi tidak dihapus.
     - Memastikan parent transaksi (Invoice/Nota) tidak dihapus.

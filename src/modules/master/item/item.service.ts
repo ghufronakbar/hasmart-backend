@@ -185,6 +185,7 @@ export class ItemService extends BaseService {
     const existingVariants = await this.prisma.masterItemVariant.findMany({
       where: { code: { in: variantCodes } },
     });
+    const existingVariantCodes = existingVariants.map((v) => v.code);
 
     for (const existing of existingVariants) {
       if (existing.deletedAt === null) {
@@ -194,61 +195,66 @@ export class ItemService extends BaseService {
       }
     }
 
-    // Create item with variants
-    const item = await this.prisma.masterItem.create({
-      data: {
-        name: data.name,
-        masterSupplierId: data.masterSupplierId,
-        masterItemCategoryId: data.masterItemCategoryId,
-        isActive: data.isActive,
-        recordedBuyPrice: 0,
-        masterItemVariants: {
-          create: data.masterItemVariants.map((v) => ({
-            code: v.code.toUpperCase(),
-            unit: v.unit,
-            amount: v.amount,
-            sellPrice: v.sellPrice,
-            isBaseUnit: v.isBaseUnit,
-            recordedBuyPrice: 0,
-          })),
-        },
-      },
-      include: {
-        masterItemCategory: {
-          select: { id: true, code: true, name: true },
-        },
-        masterSupplier: {
-          select: { id: true, code: true, name: true },
-        },
-        masterItemVariants: {
-          where: { deletedAt: null },
-        },
-      },
-    });
+    let itemId = 0;
 
-    // Restore any soft-deleted variants with same codes
-    for (const existing of existingVariants) {
-      if (existing.deletedAt !== null) {
-        const newVariant = data.masterItemVariants.find(
-          (v) => v.code.toUpperCase() === existing.code,
-        );
-        if (newVariant) {
-          await this.prisma.masterItemVariant.update({
-            where: { id: existing.id },
-            data: {
-              masterItemId: item.id,
-              unit: newVariant.unit,
-              amount: newVariant.amount,
-              sellPrice: newVariant.sellPrice,
-              isBaseUnit: newVariant.isBaseUnit,
-              deletedAt: null,
-            },
-          });
+    await this.prisma.$transaction(async (tx) => {
+      const item = await this.prisma.masterItem.create({
+        data: {
+          name: data.name,
+          masterSupplierId: data.masterSupplierId,
+          masterItemCategoryId: data.masterItemCategoryId,
+          isActive: data.isActive,
+          recordedBuyPrice: 0,
+          masterItemVariants: {
+            create: data.masterItemVariants
+              .filter(
+                (v) => !existingVariantCodes.includes(v.code.toUpperCase()),
+              )
+              .map((v) => ({
+                code: v.code.toUpperCase(),
+                unit: v.unit,
+                amount: v.amount,
+                sellPrice: v.sellPrice,
+                isBaseUnit: v.isBaseUnit,
+                recordedBuyPrice: 0,
+              })),
+          },
+        },
+        include: {
+          masterItemCategory: {
+            select: { id: true, code: true, name: true },
+          },
+          masterSupplier: {
+            select: { id: true, code: true, name: true },
+          },
+          masterItemVariants: {
+            where: { deletedAt: null },
+          },
+        },
+      });
+      itemId = item.id;
+      for (const existing of existingVariants) {
+        if (existing.deletedAt !== null) {
+          const newVariant = data.masterItemVariants.find(
+            (v) => v.code.toUpperCase() === existing.code,
+          );
+          if (newVariant) {
+            await this.prisma.masterItemVariant.update({
+              where: { id: existing.id },
+              data: {
+                masterItemId: item.id,
+                unit: newVariant.unit,
+                amount: newVariant.amount,
+                sellPrice: newVariant.sellPrice,
+                isBaseUnit: newVariant.isBaseUnit,
+                deletedAt: null,
+              },
+            });
+          }
         }
       }
-    }
-
-    return this.getItemById(item.id);
+    });
+    return this.getItemById(itemId);
   };
 
   updateItem = async (id: number, data: ItemUpdateBodyType) => {
@@ -298,7 +304,15 @@ export class ItemService extends BaseService {
 
     return await this.prisma.masterItem.update({
       where: { id },
-      data: { deletedAt: new Date() },
+      data: {
+        deletedAt: new Date(),
+        masterItemVariants: {
+          updateMany: {
+            where: { deletedAt: null },
+            data: { deletedAt: new Date() },
+          },
+        },
+      },
     });
   };
 
