@@ -174,10 +174,10 @@ export class SellService extends BaseService {
       throw new BadRequestError("Member dengan kode tersebut tidak ditemukan");
     }
 
-    // Validate all variants exist and get conversion
+    // Validate all variants exist and get conversion + sellPrice
     const variants = await this.prisma.masterItemVariant.findMany({
       where: { id: { in: uniqueVariantIds }, deletedAt: null },
-      select: { id: true, masterItemId: true, amount: true },
+      select: { id: true, masterItemId: true, amount: true, sellPrice: true },
     });
 
     if (variants.length !== uniqueVariantIds.length) {
@@ -201,17 +201,19 @@ export class SellService extends BaseService {
   }
 
   private calculateItems(
-    items: SellItemType[],
+    items: SellBodyType["items"],
     variantMap: Map<
       number,
-      { id: number; masterItemId: number; amount: number }
+      { id: number; masterItemId: number; amount: number; sellPrice: number }
     >,
   ): CalculatedItem[] {
     return items.map((item) => {
       const variant = variantMap.get(item.masterItemVariantId)!;
+
+      // Use sellPrice from database (variantMap), NOT from client input
       const recordedConversion = variant.amount;
       const totalQty = item.qty * recordedConversion;
-      const recordedSubTotalAmount = item.qty * item.sellPrice;
+      const recordedSubTotalAmount = item.qty * variant.sellPrice; // Use DB price
 
       // Calculate discounts
       let runningAmount = recordedSubTotalAmount;
@@ -239,7 +241,7 @@ export class SellService extends BaseService {
         qty: item.qty,
         recordedConversion,
         totalQty,
-        sellPrice: item.sellPrice,
+        sellPrice: variant.sellPrice, // Use DB price
         recordedSubTotalAmount,
         recordedDiscountAmount: totalDiscountAmount,
         recordedTotalAmount,
