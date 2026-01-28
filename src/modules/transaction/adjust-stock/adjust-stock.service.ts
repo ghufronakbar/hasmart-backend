@@ -160,34 +160,52 @@ export class AdjustStockService extends BaseService {
   ): CalculatedAdjustment[] {
     const adjustments: CalculatedAdjustment[] = [];
 
+    // Group items by masterItemId
+    const itemsByMaster = new Map<number, AdjustmentItemType[]>();
     for (const item of items) {
-      const variant = variantMap.get(item.masterItemVariantId)!;
-      const recordedGapConversion = variant.amount;
+      const existing = itemsByMaster.get(item.masterItemId) || [];
+      existing.push(item);
+      itemsByMaster.set(item.masterItemId, existing);
+    }
 
-      // Calculate target stock (in base unit)
-      const targetStock = item.actualQty * recordedGapConversion;
+    // Calculate adjustments per masterItemId
+    for (const [masterItemId, itemGroup] of itemsByMaster) {
+      // Calculate total actual stock (sum of all variants)
+      const totalActualStock = itemGroup.reduce((sum, item) => {
+        const variant = variantMap.get(item.masterItemVariantId)!;
+        return sum + item.actualQty * variant.amount;
+      }, 0);
 
-      // Get current stock (default to 0 if not found)
-      const currentStock = stockMap.get(item.masterItemId) || 0;
+      // Get current stock
+      const currentStock = stockMap.get(masterItemId) || 0;
 
-      // Calculate gap
-      const totalGapAmount = targetStock - currentStock;
+      // Calculate total gap
+      const totalGapAmount = totalActualStock - currentStock;
 
-      // Skip if no gap (stock matches)
+      // Skip if no gap
       if (totalGapAmount === 0) {
         continue;
       }
 
-      // Calculate gap in variant unit (integer division)
-      const gapAmount = Math.floor(totalGapAmount / recordedGapConversion);
+      // Create adjustment for each variant
+      for (const item of itemGroup) {
+        const variant = variantMap.get(item.masterItemVariantId)!;
+        const recordedGapConversion = variant.amount;
 
-      adjustments.push({
-        masterItemId: item.masterItemId,
-        masterItemVariantId: item.masterItemVariantId,
-        gapAmount,
-        recordedGapConversion,
-        totalGapAmount,
-      });
+        // Calculate this variant's actual stock in base units
+        const variantActualStock = item.actualQty * recordedGapConversion;
+
+        // gapAmount represents the quantity in this variant's unit
+        const gapAmount = item.actualQty;
+
+        adjustments.push({
+          masterItemId: item.masterItemId,
+          masterItemVariantId: item.masterItemVariantId,
+          gapAmount,
+          recordedGapConversion,
+          totalGapAmount, // Same for all variants of this item
+        });
+      }
     }
 
     return adjustments;
