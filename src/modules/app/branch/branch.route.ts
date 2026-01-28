@@ -20,7 +20,7 @@ export class BranchRouter extends BaseRouter {
     this.router.get(
       "/",
       useAuth(this.jwtService),
-      useFilter(["code"]),
+      useFilter(["code", "name"]),
       asyncHandler(
         async (req, res) => await this.controller.getAllBranches(req, res),
       ),

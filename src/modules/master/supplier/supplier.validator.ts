@@ -5,7 +5,7 @@ export const SupplierBodySchema = z.object({
   name: z.string().min(1),
   phone: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
-  email: z.string().email().optional().nullable(),
+  email: z.string().optional().nullable(),
 });
 
 export type SupplierBodyType = z.infer<typeof SupplierBodySchema>;

@@ -89,6 +89,7 @@ export class MemberService extends BaseService {
   };
 
   createMember = async (data: MemberBodyType) => {
+    const uppercaseCode = data.code.toUpperCase();
     // Validate category exists
     const category = await this.prisma.masterMemberCategory.findFirst({
       where: { id: data.masterMemberCategoryId, deletedAt: null },
@@ -98,7 +99,7 @@ export class MemberService extends BaseService {
     }
 
     const existing = await this.prisma.masterMember.findFirst({
-      where: { code: data.code },
+      where: { code: uppercaseCode },
     });
 
     if (existing) {
@@ -113,6 +114,7 @@ export class MemberService extends BaseService {
             email: data.email,
             address: data.address,
             masterMemberCategoryId: data.masterMemberCategoryId,
+            code: uppercaseCode,
             deletedAt: null,
           },
           include: {
@@ -126,7 +128,7 @@ export class MemberService extends BaseService {
 
     return await this.prisma.masterMember.create({
       data: {
-        code: data.code,
+        code: uppercaseCode,
         name: data.name,
         phone: data.phone,
         email: data.email,
@@ -142,6 +144,7 @@ export class MemberService extends BaseService {
   };
 
   updateMember = async (id: number, data: MemberBodyType) => {
+    const uppercaseCode = data.code.toUpperCase();
     const existing = await this.prisma.masterMember.findFirst({
       where: { id, deletedAt: null },
     });
@@ -159,7 +162,7 @@ export class MemberService extends BaseService {
 
     const codeCheck = await this.prisma.masterMember.findFirst({
       where: {
-        code: data.code,
+        code: uppercaseCode,
         deletedAt: null,
         NOT: { id },
       },
@@ -171,7 +174,7 @@ export class MemberService extends BaseService {
     return await this.prisma.masterMember.update({
       where: { id },
       data: {
-        code: data.code,
+        code: uppercaseCode,
         name: data.name,
         phone: data.phone,
         email: data.email,

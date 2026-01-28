@@ -4,7 +4,7 @@ export const MemberBodySchema = z.object({
   code: z.string().min(1),
   name: z.string().min(1),
   phone: z.string().optional().nullable(),
-  email: z.string().email().optional().nullable(),
+  email: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
   masterMemberCategoryId: z.number().int().positive(),
 });

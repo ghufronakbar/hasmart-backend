@@ -23,7 +23,7 @@ export class ItemCategoryRouter extends BaseRouter {
     this.router.get(
       "/",
       useAuth(this.jwtService),
-      useFilter(),
+      useFilter(["code", "name"]),
       asyncHandler(
         async (req, res) =>
           await this.controller.getAllItemCategories(req, res),
