@@ -244,9 +244,8 @@ export class PurchaseReturnService extends BaseService {
 
     // amount tax
     const recordedTaxAmount =
-      ((data.taxAmount || 0) *
-        (recordedSubTotalAmount - recordedDiscountAmount)) /
-      100;
+      (data.taxPercentage / 100) *
+      (recordedSubTotalAmount - recordedDiscountAmount);
     const recordedTotalAmount =
       recordedSubTotalAmount - recordedDiscountAmount + recordedTaxAmount;
 
@@ -263,7 +262,7 @@ export class PurchaseReturnService extends BaseService {
           recordedSubTotalAmount,
           recordedDiscountAmount,
           recordedTaxAmount,
-          recordedTaxPercentage: data.taxAmount || 0,
+          recordedTaxPercentage: data.taxPercentage,
           recordedTotalAmount,
           transactionPurchaseReturnItems: {
             create: calculatedItems.map((item) => ({
@@ -344,7 +343,10 @@ export class PurchaseReturnService extends BaseService {
       (sum, item) => sum + item.recordedDiscountAmount,
       0,
     );
-    const recordedTaxAmount = data.taxAmount || 0;
+    const recordedTaxAmount =
+      ((data.taxPercentage / 100) *
+        (recordedSubTotalAmount - recordedDiscountAmount)) /
+      100;
     const recordedTotalAmount =
       recordedSubTotalAmount - recordedDiscountAmount + recordedTaxAmount;
 
@@ -380,6 +382,7 @@ export class PurchaseReturnService extends BaseService {
           recordedSubTotalAmount,
           recordedDiscountAmount,
           recordedTaxAmount,
+          recordedTaxPercentage: data.taxPercentage,
           recordedTotalAmount,
           transactionPurchaseReturnItems: {
             create: calculatedItems.map((item) => ({

@@ -19,7 +19,7 @@ export const PurchaseBodySchema = z.object({
   masterSupplierId: z.number().int().positive(),
   branchId: z.number().int().positive(),
   notes: z.string().optional().default(""),
-  taxAmount: z.number().int().min(0).optional().default(0),
+  taxPercentage: z.number().int().min(0).max(100).default(0),
   items: z.array(PurchaseItemSchema).min(1, "Minimal harus ada 1 item"),
 });
 

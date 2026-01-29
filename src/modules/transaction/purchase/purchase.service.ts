@@ -108,7 +108,22 @@ export class PurchaseService extends BaseService {
         transactionPurchaseItems: {
           where: { deletedAt: null },
           include: {
-            masterItem: { select: { id: true, name: true } },
+            masterItem: {
+              select: {
+                id: true,
+                name: true,
+                masterItemVariants: {
+                  where: { deletedAt: null },
+                  select: {
+                    id: true,
+                    code: true,
+                    unit: true,
+                    amount: true,
+                    sellPrice: true,
+                  },
+                },
+              },
+            },
             masterItemVariant: {
               select: { id: true, code: true, unit: true, amount: true },
             },
@@ -240,9 +255,8 @@ export class PurchaseService extends BaseService {
 
     // from percentage to amount
     const recordedTaxAmount =
-      ((data.taxAmount || 0) *
-        (recordedSubTotalAmount - recordedDiscountAmount)) /
-      100;
+      (data.taxPercentage / 100) *
+      (recordedSubTotalAmount - recordedDiscountAmount);
     const recordedTotalAmount =
       recordedSubTotalAmount - recordedDiscountAmount + recordedTaxAmount;
 
@@ -259,7 +273,7 @@ export class PurchaseService extends BaseService {
           recordedSubTotalAmount,
           recordedDiscountAmount,
           recordedTaxAmount,
-          recordedTaxPercentage: data.taxAmount,
+          recordedTaxPercentage: data.taxPercentage,
           recordedTotalAmount,
           transactionPurchaseItems: {
             create: calculatedItems.map((item) => ({
@@ -340,7 +354,9 @@ export class PurchaseService extends BaseService {
       (sum, item) => sum + item.recordedDiscountAmount,
       0,
     );
-    const recordedTaxAmount = data.taxAmount || 0;
+    const recordedTaxAmount =
+      (data.taxPercentage / 100) *
+      (recordedSubTotalAmount - recordedDiscountAmount);
     const recordedTotalAmount =
       recordedSubTotalAmount - recordedDiscountAmount + recordedTaxAmount;
 
@@ -376,6 +392,7 @@ export class PurchaseService extends BaseService {
           recordedSubTotalAmount,
           recordedDiscountAmount,
           recordedTaxAmount,
+          recordedTaxPercentage: data.taxPercentage,
           recordedTotalAmount,
           transactionPurchaseItems: {
             create: calculatedItems.map((item) => ({

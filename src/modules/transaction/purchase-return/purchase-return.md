@@ -75,7 +75,7 @@ Authorization: Bearer <token>
   "masterSupplierId": 1,
   "branchId": 1,
   "notes": "Barang rusak kemasan",
-  "taxAmount": 0,
+  "taxPercentage": 0,
   "items": [
     {
       "masterItemId": 10,
