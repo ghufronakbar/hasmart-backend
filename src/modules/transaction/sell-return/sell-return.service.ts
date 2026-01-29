@@ -135,7 +135,21 @@ export class SellReturnService extends BaseService {
         transactionSellReturnItems: {
           where: { deletedAt: null },
           include: {
-            masterItem: { select: { id: true, name: true } },
+            masterItem: {
+              select: {
+                id: true,
+                name: true,
+                masterItemVariants: {
+                  select: {
+                    id: true,
+                    code: true,
+                    unit: true,
+                    amount: true,
+                    sellPrice: true,
+                  },
+                },
+              },
+            },
             masterItemVariant: {
               select: { id: true, code: true, unit: true, amount: true },
             },
