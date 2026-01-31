@@ -3,10 +3,10 @@ import { ValidationError } from "../utils/error";
 import { z } from "zod";
 
 const BranchQuerySchema = z.object({
-  branchId: z.coerce
-    .number()
-    .optional()
-    .default(undefined as unknown as number),
+  branchId: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.coerce.number().optional(),
+  ),
 });
 
 export type BranchQueryType = z.infer<typeof BranchQuerySchema>;
