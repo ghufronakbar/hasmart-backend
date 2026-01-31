@@ -36,7 +36,19 @@ export class TransferService extends BaseService {
       AND: [
         {
           OR: filter?.search
-            ? [{ notes: { contains: filter.search, mode: "insensitive" } }]
+            ? [
+                { notes: { contains: filter.search, mode: "insensitive" } },
+                {
+                  from: {
+                    name: { contains: filter.search, mode: "insensitive" },
+                  },
+                },
+                {
+                  to: {
+                    name: { contains: filter.search, mode: "insensitive" },
+                  },
+                },
+              ]
             : undefined,
         },
         branchQuery?.branchId

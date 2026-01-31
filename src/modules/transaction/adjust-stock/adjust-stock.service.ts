@@ -38,7 +38,19 @@ export class AdjustStockService extends BaseService {
     const where: Prisma.TransactionAdjustmentWhereInput = {
       deletedAt: null,
       OR: filter?.search
-        ? [{ notes: { contains: filter.search, mode: "insensitive" } }]
+        ? [
+            { notes: { contains: filter.search, mode: "insensitive" } },
+            {
+              masterItem: {
+                name: { contains: filter.search, mode: "insensitive" },
+              },
+            },
+            {
+              masterItemVariant: {
+                code: { contains: filter.search, mode: "insensitive" },
+              },
+            },
+          ]
         : undefined,
       branchId: branchQuery?.branchId,
     };

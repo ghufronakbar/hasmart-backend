@@ -75,6 +75,14 @@ export class SalesService extends BaseService {
         ? [
             { invoiceNumber: { contains: filter.search, mode: "insensitive" } },
             { notes: { contains: filter.search, mode: "insensitive" } },
+            {
+              masterMember: {
+                OR: [
+                  { name: { contains: filter.search, mode: "insensitive" } },
+                  { code: { contains: filter.search, mode: "insensitive" } },
+                ],
+              },
+            },
           ]
         : undefined,
     };

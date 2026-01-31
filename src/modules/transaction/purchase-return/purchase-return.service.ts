@@ -52,6 +52,14 @@ export class PurchaseReturnService extends BaseService {
         ? [
             { invoiceNumber: { contains: filter.search, mode: "insensitive" } },
             { notes: { contains: filter.search, mode: "insensitive" } },
+            {
+              masterSupplier: {
+                OR: [
+                  { name: { contains: filter.search, mode: "insensitive" } },
+                  { code: { contains: filter.search, mode: "insensitive" } },
+                ],
+              },
+            },
           ]
         : undefined,
     };

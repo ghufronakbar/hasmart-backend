@@ -26,7 +26,16 @@ export class ItemService extends BaseService {
     const where: Prisma.MasterItemWhereInput = {
       deletedAt: null,
       OR: filter?.search
-        ? [{ name: { contains: filter.search, mode: "insensitive" } }]
+        ? [
+            { name: { contains: filter.search, mode: "insensitive" } },
+            {
+              masterItemVariants: {
+                some: {
+                  code: { contains: filter.search, mode: "insensitive" },
+                },
+              },
+            },
+          ]
         : undefined,
     };
     return where;
