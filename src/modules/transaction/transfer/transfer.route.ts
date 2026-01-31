@@ -21,7 +21,7 @@ export class TransferRouter extends BaseRouter {
     this.router.get(
       "/",
       useAuth(this.jwtService),
-      useFilter(["transactionDate"]),
+      useFilter(["transactionDate"], true),
       useBranch(),
       asyncHandler(
         async (req, res) => await this.controller.getAllTransfers(req, res),

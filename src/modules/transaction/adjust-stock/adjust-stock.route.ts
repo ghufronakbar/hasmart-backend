@@ -24,12 +24,15 @@ export class AdjustStockRouter extends BaseRouter {
     this.router.get(
       "/",
       useAuth(this.jwtService),
-      useFilter([
-        "transactionDate",
-        "gapAmount",
-        "finalAmount",
-        "masterItem_name", // relation
-      ]),
+      useFilter(
+        [
+          "transactionDate",
+          "gapAmount",
+          "finalAmount",
+          "masterItem_name", // relation
+        ],
+        true,
+      ),
       useBranch(),
       asyncHandler(
         async (req, res) => await this.controller.getAllAdjustments(req, res),

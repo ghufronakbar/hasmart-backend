@@ -21,13 +21,16 @@ export class SellRouter extends BaseRouter {
     this.router.get(
       "/",
       useAuth(this.jwtService),
-      useFilter([
-        "transactionDate",
-        "invoiceNumber",
-        "dueDate",
-        "recordedTotalAmount",
-        "masterMemberName", // relation
-      ]),
+      useFilter(
+        [
+          "transactionDate",
+          "invoiceNumber",
+          "dueDate",
+          "recordedTotalAmount",
+          "masterMemberName", // relation
+        ],
+        true,
+      ),
       useBranch(),
       asyncHandler(
         async (req, res) => await this.controller.getAllSells(req, res),
