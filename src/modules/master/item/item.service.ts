@@ -99,6 +99,8 @@ export class ItemService extends BaseService {
         unit: v.unit,
         amount: v.amount,
         recordedBuyPrice: v.recordedBuyPrice,
+        recordedProfitPercentage: v.recordedProfitPercentage,
+        recordedProfitAmount: v.recordedProfitAmount,
         sellPrice: v.sellPrice,
         isBaseUnit: v.isBaseUnit,
         createdAt: v.createdAt,
@@ -217,6 +219,8 @@ export class ItemService extends BaseService {
                 sellPrice: v.sellPrice,
                 isBaseUnit: v.isBaseUnit,
                 recordedBuyPrice: 0,
+                recordedProfitPercentage: 0,
+                recordedProfitAmount: 0,
               })),
           },
         },
@@ -360,6 +364,8 @@ export class ItemService extends BaseService {
         sellPrice: data.sellPrice,
         isBaseUnit: data.isBaseUnit,
         recordedBuyPrice: 0,
+        recordedProfitPercentage: 0,
+        recordedProfitAmount: 0,
       },
     });
   };

@@ -13,6 +13,7 @@ import {
   RecordActionModelType,
   RecordActionType,
 } from ".prisma/client";
+import { RefreshBuyPriceService } from "../refresh-buy-price/refresh-buy-price.service";
 
 interface CalculatedDiscount {
   percentage: number;
@@ -37,6 +38,7 @@ export class PurchaseService extends BaseService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly refreshStockService: RefreshStockService,
+    private readonly refreshBuyPriceService: RefreshBuyPriceService,
   ) {
     super();
   }
@@ -320,11 +322,14 @@ export class PurchaseService extends BaseService {
     const uniqueItemIds = [
       ...new Set(calculatedItems.map((i) => i.masterItemId)),
     ];
-    await Promise.all(
-      uniqueItemIds.map((itemId) =>
+    await Promise.all([
+      ...uniqueItemIds.map((itemId) =>
         this.refreshStockService.refreshRealStock(data.branchId, itemId),
       ),
-    );
+      ...uniqueItemIds.map((itemId) =>
+        this.refreshBuyPriceService.refreshBuyPrice(itemId),
+      ),
+    ]);
 
     return this.getPurchaseById(purchase.id);
   };
@@ -453,6 +458,13 @@ export class PurchaseService extends BaseService {
       );
     }
 
+    // Refresh buy price for all affected items (old + new)
+    await Promise.all(
+      allItemIds.map((itemId) =>
+        this.refreshBuyPriceService.refreshBuyPrice(itemId),
+      ),
+    );
+
     return this.getPurchaseById(purchase.id);
   };
 
@@ -492,11 +504,16 @@ export class PurchaseService extends BaseService {
       (i) => i.masterItemId,
     );
     const uniqueItemIds = [...new Set(itemIds)];
-    await Promise.all(
-      uniqueItemIds.map((itemId) =>
+    await Promise.all([
+      // refresh stock for all items
+      ...uniqueItemIds.map((itemId) =>
         this.refreshStockService.refreshRealStock(existing.branchId, itemId),
       ),
-    );
+      // refresh buy price for all items
+      ...uniqueItemIds.map((itemId) =>
+        this.refreshBuyPriceService.refreshBuyPrice(itemId),
+      ),
+    ]);
 
     return deleted;
   };

@@ -101,7 +101,7 @@ model MasterItem {
   // global (inputable)
   isActive Boolean @map("is_active")
 
-  // global (recorded from transaction)
+  // global (recorded from transaction) //average
   recordedBuyPrice Int @map("recorded_buy_price")
 
   // mapping item per cabang (ex: kebutuhan stok)
@@ -170,6 +170,10 @@ model MasterItemVariant {
   masterItem   MasterItem @relation(fields: [masterItemId], references: [id])
 
   isBaseUnit Boolean @map("is_base_unit") // apakah ini unit dasar (biasanya PCS, intinya amount=1)
+
+  // recorded (from transaction)
+  recordedProfitPercentage Int @map("recorded_profit_percentage")
+  recordedProfitAmount     Int @map("recorded_profit_amount")
 
   // track purchase & returns
   transactionPurchaseItems       TransactionPurchaseItem[]

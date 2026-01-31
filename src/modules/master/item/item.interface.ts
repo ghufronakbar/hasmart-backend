@@ -32,6 +32,8 @@ export interface ItemVariantResponse {
   unit: string;
   amount: number;
   recordedBuyPrice: number;
+  recordedProfitPercentage: number;
+  recordedProfitAmount: number;
   sellPrice: number;
   isBaseUnit: boolean;
   createdAt: Date;

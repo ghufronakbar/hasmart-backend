@@ -42,6 +42,7 @@ import { MemberService } from "./modules/master/member/member.service";
 
 // Transaction Common Services
 import { RefreshStockService } from "./modules/transaction/refresh-stock/refresh-stock.service";
+import { RefreshBuyPriceService } from "./modules/transaction/refresh-buy-price/refresh-buy-price.service";
 
 // Purchase Module
 import { PurchaseRouter } from "./modules/transaction/purchase/purchase.route";
@@ -102,6 +103,7 @@ const jwtService = new JwtService(cfg);
 
 // init transaction common services
 const refreshStockService = new RefreshStockService(prismaService);
+const refreshBuyPriceService = new RefreshBuyPriceService(prismaService);
 
 // init branch module
 const branchService = new BranchService(prismaService);
@@ -152,7 +154,11 @@ const memberController = new MemberController(memberService);
 const memberRouter = new MemberRouter(memberController, jwtService);
 
 // init purchase module
-const purchaseService = new PurchaseService(prismaService, refreshStockService);
+const purchaseService = new PurchaseService(
+  prismaService,
+  refreshStockService,
+  refreshBuyPriceService,
+);
 const purchaseController = new PurchaseController(purchaseService);
 const purchaseRouter = new PurchaseRouter(purchaseController, jwtService);
 
