@@ -161,3 +161,4 @@ Authorization: Bearer <token>
 - Adjustment bersifat **immutable** (tidak ada update endpoint)
 - Jika semua item tidak ada gap, akan error dengan pesan "Tidak ada penyesuaian yang diperlukan"
 - Satu POST request bisa menghasilkan multiple adjustment records (satu per item yang ada gap)
+- Input `actualQty` disimpan sebagai `finalAmount`

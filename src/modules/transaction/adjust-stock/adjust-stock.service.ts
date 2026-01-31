@@ -19,6 +19,7 @@ interface CalculatedAdjustment {
   gapAmount: number;
   recordedGapConversion: number;
   totalGapAmount: number;
+  actualQty: number;
 }
 
 export class AdjustStockService extends BaseService {
@@ -204,6 +205,7 @@ export class AdjustStockService extends BaseService {
           gapAmount,
           recordedGapConversion,
           totalGapAmount, // Same for all variants of this item
+          actualQty: item.actualQty,
         });
       }
     }
@@ -239,6 +241,7 @@ export class AdjustStockService extends BaseService {
               gapAmount: adj.gapAmount,
               recordedGapConversion: adj.recordedGapConversion,
               totalGapAmount: adj.totalGapAmount,
+              finalAmount: adj.actualQty,
             },
           }),
         ),

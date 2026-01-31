@@ -861,6 +861,7 @@ model TransactionAdjustment {
   gapAmount             Int @map("gap_amount") // dalam pack atau sesuai variant
   recordedGapConversion Int @map("recorded_gap_conversion") // merecord conversion dari variant
   totalGapAmount        Int @map("total_gap_amount") // dalam satuan (1)
+  finalAmount           Int @map("final_amount") // final amount setelah penyesuaian
 
   branchId Int    @map("branch_id")
   branch   Branch @relation(fields: [branchId], references: [id])
