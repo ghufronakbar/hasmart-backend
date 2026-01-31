@@ -78,6 +78,21 @@ export class SalesService extends BaseService {
           ]
         : undefined,
     };
+
+    if (filter?.dateStart || filter?.dateEnd) {
+      where.transactionDate = {};
+
+      if (filter.dateStart) {
+        where.transactionDate.gte = filter.dateStart;
+      }
+
+      if (filter.dateEnd) {
+        const nextDay = new Date(filter.dateEnd);
+        nextDay.setDate(nextDay.getDate() + 1);
+
+        where.transactionDate.lt = nextDay;
+      }
+    }
     return where;
   }
 
@@ -119,12 +134,10 @@ export class SalesService extends BaseService {
             name: filter?.sort,
           },
         };
-      case "transactionDate":
-        return {
-          createdAt: filter?.sort,
-        };
       default:
-        return filter?.sortBy ? { [filter?.sortBy]: filter?.sort } : { id: "desc" };
+        return filter?.sortBy
+          ? { [filter?.sortBy]: filter?.sort }
+          : { id: "desc" };
     }
   }
 
@@ -303,6 +316,8 @@ export class SalesService extends BaseService {
           recordedSubTotalAmount,
           recordedDiscountAmount,
           recordedTotalAmount,
+          // TODO: ganti kalau bisa custom
+          transactionDate: new Date(),
           transactionSalesItems: {
             create: calculatedItems.map((item) => ({
               masterItemId: item.masterItemId,

@@ -78,6 +78,22 @@ export class SellService extends BaseService {
           ]
         : undefined,
     };
+
+    if (filter?.dateStart || filter?.dateEnd) {
+      where.transactionDate = {};
+
+      if (filter.dateStart) {
+        where.transactionDate.gte = filter.dateStart;
+      }
+
+      if (filter.dateEnd) {
+        const nextDay = new Date(filter.dateEnd);
+        nextDay.setDate(nextDay.getDate() + 1);
+
+        where.transactionDate.lt = nextDay;
+      }
+    }
+
     return where;
   }
 

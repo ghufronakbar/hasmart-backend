@@ -478,6 +478,9 @@ model TransactionSales {
   branchId Int    @map("branch_id")
   branch   Branch @relation(fields: [branchId], references: [id])
 
+  // time
+  transactionDate DateTime @map("transaction_date")
+
   // relation
   transactionSalesItems TransactionSalesItem[]
 
@@ -563,6 +566,9 @@ model TransactionSalesReturn {
 
   branchId Int    @map("branch_id")
   branch   Branch @relation(fields: [branchId], references: [id])
+
+  // time
+  transactionDate DateTime @map("transaction_date")
 
   // relation
   transactionSalesReturnItems TransactionSalesReturnItem[]
@@ -863,8 +869,12 @@ model TransactionAdjustment {
   totalGapAmount        Int @map("total_gap_amount") // dalam satuan (1)
   finalAmount           Int @map("final_amount") // final amount setelah penyesuaian
 
+  // branch
   branchId Int    @map("branch_id")
   branch   Branch @relation(fields: [branchId], references: [id])
+
+  // time
+  transactionDate DateTime @map("transaction_date")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")

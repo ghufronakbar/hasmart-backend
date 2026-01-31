@@ -42,6 +42,22 @@ export class AdjustStockService extends BaseService {
         : undefined,
       branchId: branchQuery?.branchId,
     };
+
+    if (filter?.dateStart || filter?.dateEnd) {
+      where.transactionDate = {};
+
+      if (filter.dateStart) {
+        where.transactionDate.gte = filter.dateStart;
+      }
+
+      if (filter.dateEnd && filter.dateEnd !== filter.dateStart) {
+        const nextDay = new Date(filter.dateEnd);
+        nextDay.setDate(nextDay.getDate() + 1);
+
+        where.transactionDate.lt = nextDay;
+      }
+    }
+
     return where;
   }
 
@@ -275,6 +291,8 @@ export class AdjustStockService extends BaseService {
               masterItemVariantId: adj.masterItemVariantId,
               gapAmount: adj.gapAmount,
               recordedGapConversion: adj.recordedGapConversion,
+              // TODO: ganti jika bisa custom
+              transactionDate: data.transactionDate,
               totalGapAmount: adj.totalGapAmount,
               finalAmount: adj.actualQty,
             },

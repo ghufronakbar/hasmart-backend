@@ -50,14 +50,28 @@ export class PurchaseService extends BaseService {
   ): Prisma.TransactionPurchaseWhereInput {
     const where: Prisma.TransactionPurchaseWhereInput = {
       deletedAt: null,
+      branchId: branchQuery?.branchId,
       OR: filter?.search
         ? [
             { invoiceNumber: { contains: filter.search, mode: "insensitive" } },
             { notes: { contains: filter.search, mode: "insensitive" } },
           ]
         : undefined,
-      branchId: branchQuery?.branchId,
     };
+    if (filter?.dateStart || filter?.dateEnd) {
+      where.transactionDate = {};
+
+      if (filter.dateStart) {
+        where.transactionDate.gte = filter.dateStart;
+      }
+
+      if (filter.dateEnd) {
+        const nextDay = new Date(filter.dateEnd);
+        nextDay.setDate(nextDay.getDate() + 1);
+
+        where.transactionDate.lt = nextDay;
+      }
+    }
     return where;
   }
 

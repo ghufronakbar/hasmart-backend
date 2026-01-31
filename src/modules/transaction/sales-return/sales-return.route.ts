@@ -25,6 +25,7 @@ export class SalesReturnRouter extends BaseRouter {
       "/",
       useAuth(this.jwtService),
       useFilter([
+        "transactionDate",
         "returnNumber",
         "recordedTotalAmount",
         "transactionSales_invoiceNumber", // special relation

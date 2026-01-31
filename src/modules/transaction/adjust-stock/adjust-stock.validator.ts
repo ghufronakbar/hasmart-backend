@@ -9,6 +9,7 @@ export const AdjustmentBodySchema = z.object({
   branchId: z.number().int().positive(),
   notes: z.string().optional().default(""),
   items: z.array(AdjustmentItemSchema).min(1, "Minimal harus ada 1 item"),
+  transactionDate: z.coerce.date(),
 });
 
 export type AdjustmentBodyType = z.infer<typeof AdjustmentBodySchema>;

@@ -52,7 +52,7 @@ GET /api/transaction/sell
 Authorization: Bearer <token>
 ```
 
-**Query:** `search`, `page`, `limit`, `sort`, `sortBy`, `branchId`
+**Query:** `search`, `page`, `limit`, `sort`, `sortBy`, `branchId`, `dateStart`, `dateEnd`
 
 ---
 
