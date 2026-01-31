@@ -84,7 +84,6 @@ Authorization: Bearer <token>
   "taxPercentage": 11,
   "items": [
     {
-      "masterItemId": 10,
       "masterItemVariantId": 5,
       "qty": 50,
       "sellPrice": 45000,

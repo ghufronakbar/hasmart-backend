@@ -76,12 +76,10 @@ Authorization: Bearer <token>
   "notes": "Dikirim menggunakan mobil box B 1234 CD, Driver: Udin",
   "items": [
     {
-      "masterItemId": 10,
       "masterItemVariantId": 5,
       "qty": 10
     },
     {
-      "masterItemId": 11,
       "masterItemVariantId": 8,
       "qty": 5
     }

@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 const AdjustmentItemSchema = z.object({
-  masterItemId: z.number().int().positive(),
   masterItemVariantId: z.number().int().positive(),
   actualQty: z.number().int().min(0), // Jumlah fisik yang dihitung user
 });

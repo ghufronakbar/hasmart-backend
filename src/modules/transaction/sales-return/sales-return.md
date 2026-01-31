@@ -75,7 +75,6 @@ Authorization: Bearer <token>
   "notes": "Barang cacat produksi",
   "items": [
     {
-      "masterItemId": 10,
       "masterItemVariantId": 5,
       "qty": 1,
       "salesPrice": 55000,

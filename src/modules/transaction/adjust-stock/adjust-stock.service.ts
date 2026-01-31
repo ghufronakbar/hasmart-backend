@@ -121,7 +121,13 @@ export class AdjustStockService extends BaseService {
 
     // Validate all variants exist and get conversion
     const variants = await this.prisma.masterItemVariant.findMany({
-      where: { id: { in: uniqueVariantIds }, deletedAt: null },
+      where: {
+        id: { in: uniqueVariantIds },
+        deletedAt: null,
+        masterItem: {
+          deletedAt: null,
+        },
+      },
       select: { id: true, masterItemId: true, amount: true },
     });
 
@@ -132,18 +138,13 @@ export class AdjustStockService extends BaseService {
     // Create variant map for quick lookup
     const variantMap = new Map(variants.map((v) => [v.id, v]));
 
-    // Validate masterItemId matches variant
-    for (const item of data.items) {
-      const variant = variantMap.get(item.masterItemVariantId);
-      if (!variant || variant.masterItemId !== item.masterItemId) {
-        throw new BadRequestError(
-          "masterItemId tidak sesuai dengan variant yang dipilih",
-        );
-      }
+    // validate unique masterItemId
+    const itemIds = Array.from(new Set(variants.map((v) => v.masterItemId)));
+    if (itemIds.length !== variants.length) {
+      throw new BadRequestError("Setiap masterItemId harus unique");
     }
 
     // Get current stock for all items
-    const itemIds = [...new Set(data.items.map((i) => i.masterItemId))];
     const currentStocks = await this.prisma.itemBranch.findMany({
       where: {
         branchId: data.branchId,
@@ -173,16 +174,23 @@ export class AdjustStockService extends BaseService {
     // Group items by masterItemId
     const itemsByMaster = new Map<number, AdjustmentItemType[]>();
     for (const item of items) {
-      const existing = itemsByMaster.get(item.masterItemId) || [];
+      const variant = variantMap.get(item.masterItemVariantId);
+      if (!variant) {
+        throw new BadRequestError("Variant tidak ditemukan");
+      }
+      const existing = itemsByMaster.get(variant.masterItemId) || [];
       existing.push(item);
-      itemsByMaster.set(item.masterItemId, existing);
+      itemsByMaster.set(variant.masterItemId, existing);
     }
 
     // Calculate adjustments per masterItemId
     for (const [masterItemId, itemGroup] of itemsByMaster) {
       // Calculate total actual stock (sum of all variants)
       const totalActualStock = itemGroup.reduce((sum, item) => {
-        const variant = variantMap.get(item.masterItemVariantId)!;
+        const variant = variantMap.get(item.masterItemVariantId);
+        if (!variant) {
+          throw new BadRequestError("Variant tidak ditemukan");
+        }
         return sum + item.actualQty * variant.amount;
       }, 0);
 
@@ -199,7 +207,10 @@ export class AdjustStockService extends BaseService {
 
       // Create adjustment for each variant
       for (const item of itemGroup) {
-        const variant = variantMap.get(item.masterItemVariantId)!;
+        const variant = variantMap.get(item.masterItemVariantId);
+        if (!variant) {
+          throw new BadRequestError("Variant tidak ditemukan");
+        }
         const recordedGapConversion = variant.amount;
 
         // Calculate this variant's actual stock in base units
@@ -209,7 +220,7 @@ export class AdjustStockService extends BaseService {
         const gapAmount = item.actualQty;
 
         adjustments.push({
-          masterItemId: item.masterItemId,
+          masterItemId: variant.masterItemId,
           masterItemVariantId: item.masterItemVariantId,
           gapAmount,
           recordedGapConversion,

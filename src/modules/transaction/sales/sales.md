@@ -74,7 +74,6 @@ Authorization: Bearer <token>
   "memberCode": "MBR001",
   "items": [
     {
-      "masterItemId": 10,
       "masterItemVariantId": 5,
       "discounts": [{ "percentage": 10 }]
     }

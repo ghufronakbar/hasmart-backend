@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 const TransferItemSchema = z.object({
-  masterItemId: z.number().int().positive(),
   masterItemVariantId: z.number().int().positive(),
   qty: z.number().int().positive(),
 });

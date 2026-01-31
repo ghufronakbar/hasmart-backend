@@ -160,7 +160,11 @@ export class PurchaseReturnService extends BaseService {
 
     // Validate all variants exist and get conversion
     const variants = await this.prisma.masterItemVariant.findMany({
-      where: { id: { in: uniqueVariantIds }, deletedAt: null },
+      where: {
+        id: { in: uniqueVariantIds },
+        deletedAt: null,
+        masterItem: { deletedAt: null },
+      },
       select: { id: true, masterItemId: true, amount: true },
     });
 
@@ -170,16 +174,6 @@ export class PurchaseReturnService extends BaseService {
 
     // Create variant map for quick lookup
     const variantMap = new Map(variants.map((v) => [v.id, v]));
-
-    // Validate masterItemId matches variant
-    for (const item of data.items) {
-      const variant = variantMap.get(item.masterItemVariantId);
-      if (!variant || variant.masterItemId !== item.masterItemId) {
-        throw new BadRequestError(
-          "masterItemId tidak sesuai dengan variant yang dipilih",
-        );
-      }
-    }
 
     return { variantMap };
   }
@@ -218,7 +212,7 @@ export class PurchaseReturnService extends BaseService {
       const recordedTotalAmount = recordedSubTotalAmount - totalDiscountAmount;
 
       return {
-        masterItemId: item.masterItemId,
+        masterItemId: variant.masterItemId,
         masterItemVariantId: item.masterItemVariantId,
         qty: item.qty,
         recordedConversion,

@@ -74,12 +74,10 @@ Authorization: Bearer <token>
   "notes": "Stock opname akhir bulan Januari 2026",
   "items": [
     {
-      "masterItemId": 10,
       "masterItemVariantId": 5,
       "actualQty": 50
     },
     {
-      "masterItemId": 11,
       "masterItemVariantId": 8,
       "actualQty": 10
     }
@@ -87,7 +85,10 @@ Authorization: Bearer <token>
 }
 ```
 
-> **Note:** User hanya input `actualQty` (jumlah fisik). Sistem otomatis hitung gap dengan stok tercatat.
+> **Note:**
+
+- User hanya input `actualQty` (jumlah fisik). Sistem otomatis hitung gap dengan stok tercatat.
+- Logika akan mengecek, bahwa tidak bisa melakukan adjust stock untuk masterItemId yang sama (divalidasi dari masterItemVariant.masterItemId)
 
 **Response:** Array of created adjustments (hanya item yang ada selisih)
 

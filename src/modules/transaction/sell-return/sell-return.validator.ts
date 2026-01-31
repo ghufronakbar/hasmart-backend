@@ -5,7 +5,6 @@ const SellReturnDiscountSchema = z.object({
 });
 
 const SellReturnItemSchema = z.object({
-  masterItemId: z.number().int().positive(),
   masterItemVariantId: z.number().int().positive(),
   qty: z.number().int().positive(),
   sellPrice: z.number().int().min(0),
