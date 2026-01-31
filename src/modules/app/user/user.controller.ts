@@ -29,7 +29,6 @@ export class UserController extends BaseController {
     return this.sendOk(req, res, result);
   };
 
-  // TODO: change this - add proper authorization check
   createUser = async (req: Request, res: Response) => {
     const data = req.body as CreateUserBodyType;
     const result = await this.service.createUser(data);

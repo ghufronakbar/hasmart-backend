@@ -45,7 +45,6 @@ export class UserRouter extends BaseRouter {
     );
 
     // POST /api/app/user (Bearer Token Required)
-    // TODO: change this - add proper authorization check
     this.router.post(
       "/",
       useAuth(this.jwtService),

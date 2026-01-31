@@ -25,3 +25,22 @@ export const CreateUserBodySchema = z.object({
 });
 
 export type CreateUserBodyType = z.infer<typeof CreateUserBodySchema>;
+
+export const EditProfileBodySchema = z.object({
+  name: z.string().min(3),
+});
+
+export type EditProfileBodyType = z.infer<typeof EditProfileBodySchema>;
+
+export const ChangePasswordBodySchema = z.object({
+  oldPassword: z.string().min(6),
+  newPassword: z.string().min(6),
+});
+
+export type ChangePasswordBodyType = z.infer<typeof ChangePasswordBodySchema>;
+
+export const ResetPasswordBodySchema = z.object({
+  newPassword: z.string().min(6),
+});
+
+export type ResetPasswordBodyType = z.infer<typeof ResetPasswordBodySchema>;
