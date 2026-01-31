@@ -6,6 +6,9 @@ import {
   FirstTimeSetupBodySchema,
   LoginBodySchema,
   CreateUserBodySchema,
+  EditProfileBodySchema,
+  ChangePasswordBodySchema,
+  ResetPasswordBodySchema,
 } from "./user.validator";
 import { useAuth } from "../../../middleware/use-auth";
 import { JwtService } from "../../common/jwt/jwt.service";
@@ -59,6 +62,45 @@ export class UserRouter extends BaseRouter {
       "/whoami",
       useAuth(this.jwtService),
       asyncHandler(async (req, res) => await this.controller.whoami(req, res)),
+    );
+
+    // PUT /api/app/user (Bearer Token Required)
+    this.router.put(
+      "/",
+      useAuth(this.jwtService),
+      validateHandler({ body: EditProfileBodySchema }),
+      asyncHandler(
+        async (req, res) => await this.controller.editProfile(req, res),
+      ),
+    );
+
+    // POST /api/app/user/change-password (Bearer Token Required)
+    this.router.post(
+      "/change-password",
+      useAuth(this.jwtService),
+      validateHandler({ body: ChangePasswordBodySchema }),
+      asyncHandler(
+        async (req, res) => await this.controller.changePassword(req, res),
+      ),
+    );
+
+    // DELETE /api/app/user/:id (Bearer Token Required)
+    this.router.delete(
+      "/:id",
+      useAuth(this.jwtService),
+      asyncHandler(
+        async (req, res) => await this.controller.deleteUser(req, res),
+      ),
+    );
+
+    // POST /api/app/user/:id/reset-password (Bearer Token Required)
+    this.router.post(
+      "/:id/reset-password",
+      useAuth(this.jwtService),
+      validateHandler({ body: ResetPasswordBodySchema }),
+      asyncHandler(
+        async (req, res) => await this.controller.resetPassword(req, res),
+      ),
     );
   }
 }

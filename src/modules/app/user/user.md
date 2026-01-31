@@ -164,6 +164,111 @@ Authorization: Bearer <token>
 
 ---
 
+### Edit Profile (Protected)
+
+```
+PUT /api/app/user
+Authorization: Bearer <token>
+```
+
+**Body:**
+
+```json
+{
+  "name": "admin baru"
+}
+```
+
+**Response:**
+
+```json
+{
+  "id": 1,
+  "name": "admin baru",
+  "isActive": true,
+  "isSuperUser": true
+}
+```
+
+---
+
+### Change Password (Protected)
+
+```
+POST /api/app/user/change-password
+Authorization: Bearer <token>
+```
+
+**Body:**
+
+```json
+{
+  "oldPassword": "password123",
+  "newPassword": "newpassword123"
+}
+```
+
+**Response:**
+
+```json
+{
+  "id": 1,
+  "name": "admin baru",
+  "isActive": true,
+  "isSuperUser": true
+}
+```
+
+---
+
+### Delete User (Protected)
+
+```
+DELETE /api/app/user/:id
+Authorization: Bearer <token>
+```
+
+**Response:**
+
+```json
+{
+  "id": 2,
+  "name": "staff1",
+  "isActive": true,
+  "isSuperUser": false
+}
+```
+
+---
+
+### Reset Password (Protected)
+
+```
+POST /api/app/user/:id/reset-password
+Authorization: Bearer <token>
+```
+
+**Body:**
+
+```json
+{
+  "newPassword": "newpassword123"
+}
+```
+
+**Response:**
+
+```json
+{
+  "id": 2,
+  "name": "staff1",
+  "isActive": true,
+  "isSuperUser": false
+}
+```
+
+---
+
 ## Validation Schemas
 
 ```typescript
@@ -181,6 +286,19 @@ const CreateUserBodySchema = z.object({
   name: z.string().min(3),
   password: z.string().min(6),
   isActive: z.boolean().default(true),
+});
+
+const EditProfileBodySchema = z.object({
+  name: z.string().min(3),
+});
+
+const ChangePasswordBodySchema = z.object({
+  oldPassword: z.string().min(6),
+  newPassword: z.string().min(6),
+});
+
+const ResetPasswordBodySchema = z.object({
+  newPassword: z.string().min(6),
 });
 ```
 

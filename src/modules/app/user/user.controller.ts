@@ -5,6 +5,9 @@ import {
   FirstTimeSetupBodyType,
   LoginBodyType,
   CreateUserBodyType,
+  EditProfileBodyType,
+  ChangePasswordBodyType,
+  ResetPasswordBodyType,
 } from "./user.validator";
 
 export class UserController extends BaseController {
@@ -38,6 +41,33 @@ export class UserController extends BaseController {
   whoami = async (req: Request, res: Response) => {
     const userId = req.user!.userId;
     const result = await this.service.whoami(userId);
+    return this.sendOk(req, res, result);
+  };
+
+  editProfile = async (req: Request, res: Response) => {
+    const userId = req.user!.userId;
+    const data = req.body as EditProfileBodyType;
+    const result = await this.service.editProfile(userId, data);
+    return this.sendOk(req, res, result);
+  };
+
+  changePassword = async (req: Request, res: Response) => {
+    const userId = req.user!.userId;
+    const data = req.body as ChangePasswordBodyType;
+    const result = await this.service.changePassword(userId, data);
+    return this.sendOk(req, res, result);
+  };
+
+  deleteUser = async (req: Request, res: Response) => {
+    const userId = parseInt(req.params.id);
+    const result = await this.service.deleteUser(userId);
+    return this.sendOk(req, res, result);
+  };
+
+  resetPassword = async (req: Request, res: Response) => {
+    const userId = parseInt(req.params.id);
+    const data = req.body as ResetPasswordBodyType;
+    const result = await this.service.resetPassword(userId, data);
     return this.sendOk(req, res, result);
   };
 }

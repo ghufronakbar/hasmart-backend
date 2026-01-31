@@ -80,7 +80,7 @@ export class UserService extends BaseService {
   login = async (data: LoginBodyType) => {
     const user = await this.prisma.user.findFirst({
       where: {
-        name: data.name,
+        name: data.name?.toLowerCase(),
         deletedAt: null,
       },
     });
@@ -122,7 +122,7 @@ export class UserService extends BaseService {
   createUser = async (data: CreateUserBodyType) => {
     const existingUser = await this.prisma.user.findUnique({
       where: {
-        name: data.name,
+        name: data.name?.toLowerCase(),
       },
     });
 
