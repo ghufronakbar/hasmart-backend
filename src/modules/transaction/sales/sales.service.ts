@@ -192,7 +192,7 @@ export class SalesService extends BaseService {
     // Validate all variants exist and get conversion
     const variants = await this.prisma.masterItemVariant.findMany({
       where: { id: { in: uniqueVariantIds }, deletedAt: null },
-      select: { id: true, masterItemId: true, amount: true },
+      select: { id: true, masterItemId: true, amount: true, sellPrice: true },
     });
 
     if (variants.length !== uniqueVariantIds.length) {
@@ -212,21 +212,21 @@ export class SalesService extends BaseService {
       }
     }
 
-    return { variantMap, memberId };
+    return { variantMap, memberId, variants };
   }
 
   private calculateItems(
     items: SalesItemType[],
     variantMap: Map<
       number,
-      { id: number; masterItemId: number; amount: number }
+      { id: number; masterItemId: number; amount: number; sellPrice: number }
     >,
   ): CalculatedItem[] {
     return items.map((item) => {
       const variant = variantMap.get(item.masterItemVariantId)!;
       const recordedConversion = variant.amount;
       const totalQty = item.qty * recordedConversion;
-      const recordedSubTotalAmount = item.qty * item.salesPrice;
+      const recordedSubTotalAmount = item.qty * variant.sellPrice;
 
       // Calculate discounts
       let runningAmount = recordedSubTotalAmount;
@@ -254,7 +254,7 @@ export class SalesService extends BaseService {
         qty: item.qty,
         recordedConversion,
         totalQty,
-        salesPrice: item.salesPrice,
+        salesPrice: variant.sellPrice,
         recordedSubTotalAmount,
         recordedDiscountAmount: totalDiscountAmount,
         recordedTotalAmount,

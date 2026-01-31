@@ -76,8 +76,6 @@ Authorization: Bearer <token>
     {
       "masterItemId": 10,
       "masterItemVariantId": 5,
-      "qty": 2,
-      "salesPrice": 55000,
       "discounts": [{ "percentage": 10 }]
     }
   ]
