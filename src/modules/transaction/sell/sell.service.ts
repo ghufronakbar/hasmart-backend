@@ -89,9 +89,7 @@ export class SellService extends BaseService {
       where: this.constructWhere(filter, branchQuery),
       skip: filter?.skip,
       take: filter?.limit,
-      orderBy: filter?.sortBy
-        ? { [filter?.sortBy]: filter?.sort }
-        : { createdAt: "desc" },
+      orderBy: this.constructOrder(filter),
       include: {
         masterMember: { select: { id: true, code: true, name: true } },
         branch: { select: { id: true, name: true } },
@@ -109,6 +107,23 @@ export class SellService extends BaseService {
       },
     };
     return args;
+  }
+
+  private constructOrder(
+    filter?: FilterQueryType,
+  ): Prisma.TransactionSellOrderByWithRelationInput | undefined {
+    switch (filter?.sortBy) {
+      case "masterMemberName":
+        return {
+          masterMember: {
+            name: filter?.sort,
+          },
+        };
+      default:
+        return filter?.sortBy
+          ? { [filter?.sortBy]: filter?.sort }
+          : { id: "desc" };
+    }
   }
 
   getAllSells = async (

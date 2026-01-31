@@ -24,7 +24,13 @@ export class SellReturnRouter extends BaseRouter {
     this.router.get(
       "/",
       useAuth(this.jwtService),
-      useFilter(["invoiceNumber"]),
+      useFilter([
+        "transactionDate",
+        "invoiceNumber",
+        "dueDate",
+        "recordedTotalAmount",
+        "masterMemberName", // relation
+      ]),
       useBranch(),
       asyncHandler(
         async (req, res) => await this.controller.getAllSellReturns(req, res),

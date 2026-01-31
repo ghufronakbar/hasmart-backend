@@ -69,7 +69,7 @@ export class PurchaseService extends BaseService {
       where: this.constructWhere(filter, branchQuery),
       skip: filter?.skip,
       take: filter?.limit,
-      orderBy: filter?.sortBy ? { [filter?.sortBy]: filter?.sort } : undefined,
+      orderBy: this.constructOrder(filter),
       include: {
         masterSupplier: { select: { id: true, code: true, name: true } },
         branch: { select: { id: true, name: true } },
@@ -87,6 +87,23 @@ export class PurchaseService extends BaseService {
       },
     };
     return args;
+  }
+
+  private constructOrder(
+    filter?: FilterQueryType,
+  ): Prisma.TransactionPurchaseOrderByWithRelationInput | undefined {
+    switch (filter?.sortBy) {
+      case "masterSupplierName":
+        return {
+          masterSupplier: {
+            name: filter?.sort,
+          },
+        };
+      default:
+        return filter?.sortBy
+          ? { [filter?.sortBy]: filter?.sort }
+          : { id: "desc" };
+    }
   }
 
   getAllPurchases = async (

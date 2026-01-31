@@ -21,7 +21,13 @@ export class PurchaseRouter extends BaseRouter {
     this.router.get(
       "/",
       useAuth(this.jwtService),
-      useFilter(["invoiceNumber"]),
+      useFilter([
+        "invoiceNumber",
+        "transactionDate",
+        "dueDate",
+        "recordedTotalAmount",
+        "masterSupplierName", // special relation
+      ]),
       useBranch(),
       asyncHandler(
         async (req, res) => await this.controller.getAllPurchases(req, res),

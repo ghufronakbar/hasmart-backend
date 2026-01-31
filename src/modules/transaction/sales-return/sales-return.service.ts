@@ -97,9 +97,7 @@ export class SalesReturnService extends BaseService {
       where: this.constructWhere(filter, branchQuery),
       skip: filter?.skip,
       take: filter?.limit,
-      orderBy: filter?.sortBy
-        ? { [filter?.sortBy]: filter?.sort }
-        : { createdAt: "desc" },
+      orderBy: this.constructOrder(filter),
       include: {
         transactionSales: { select: { id: true, invoiceNumber: true } },
         masterMember: { select: { id: true, code: true, name: true } },
@@ -118,6 +116,29 @@ export class SalesReturnService extends BaseService {
       },
     };
     return args;
+  }
+
+  private constructOrder(
+    filter?: FilterQueryType,
+  ): Prisma.TransactionSalesReturnOrderByWithRelationInput | undefined {
+    switch (filter?.sortBy) {
+      case "masterMember_name":
+        return {
+          masterMember: {
+            name: filter?.sort,
+          },
+        };
+      case "transactionSales_invoiceNumber":
+        return {
+          transactionSales: {
+            invoiceNumber: filter?.sort,
+          },
+        };
+      default:
+        return filter?.sortBy
+          ? { [filter?.sortBy]: filter?.sort }
+          : { id: "desc" };
+    }
   }
 
   getAllSalesReturns = async (

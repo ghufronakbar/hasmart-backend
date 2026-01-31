@@ -53,9 +53,7 @@ export class AdjustStockService extends BaseService {
       where: this.constructWhere(filter, branchQuery),
       skip: filter?.skip,
       take: filter?.limit,
-      orderBy: filter?.sortBy
-        ? { [filter?.sortBy]: filter?.sort }
-        : { createdAt: "desc" },
+      orderBy: this.constructOrder(filter),
       include: {
         branch: { select: { id: true, name: true } },
         masterItem: { select: { id: true, name: true } },
@@ -63,6 +61,23 @@ export class AdjustStockService extends BaseService {
       },
     };
     return args;
+  }
+
+  private constructOrder(
+    filter?: FilterQueryType,
+  ): Prisma.TransactionAdjustmentOrderByWithRelationInput | undefined {
+    switch (filter?.sortBy) {
+      case "masterItem_name":
+        return {
+          masterItem: {
+            name: filter?.sort,
+          },
+        };
+      default:
+        return filter?.sortBy
+          ? { [filter?.sortBy]: filter?.sort }
+          : { id: "desc" };
+    }
   }
 
   getAllAdjustments = async (

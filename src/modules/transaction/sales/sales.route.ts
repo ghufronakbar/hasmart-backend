@@ -21,7 +21,12 @@ export class SalesRouter extends BaseRouter {
     this.router.get(
       "/",
       useAuth(this.jwtService),
-      useFilter(["invoiceNumber"]),
+      useFilter([
+        "invoiceNumber",
+        "recordedTotalAmount",
+        "transactionDate", // special relation
+        "masterMember_name", // special relation
+      ]),
       useBranch(),
       asyncHandler(
         async (req, res) => await this.controller.getAllSales(req, res),
