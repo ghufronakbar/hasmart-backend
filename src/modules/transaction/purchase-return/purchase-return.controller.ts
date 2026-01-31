@@ -13,8 +13,11 @@ export class PurchaseReturnController extends BaseController {
 
   getAllPurchaseReturns = async (req: Request, res: Response) => {
     const filter = req.filterQuery;
-    const { rows, pagination } =
-      await this.service.getAllPurchaseReturns(filter);
+    const branchQuery = req.branchQuery;
+    const { rows, pagination } = await this.service.getAllPurchaseReturns(
+      filter,
+      branchQuery,
+    );
     return this.sendList(req, res, rows, pagination, filter);
   };
 

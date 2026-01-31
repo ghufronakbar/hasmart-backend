@@ -10,7 +10,11 @@ export class SellController extends BaseController {
 
   getAllSells = async (req: Request, res: Response) => {
     const filter = req.filterQuery;
-    const { rows, pagination } = await this.service.getAllSells(filter);
+    const branchQuery = req.branchQuery;
+    const { rows, pagination } = await this.service.getAllSells(
+      filter,
+      branchQuery,
+    );
     return this.sendList(req, res, rows, pagination, filter);
   };
 

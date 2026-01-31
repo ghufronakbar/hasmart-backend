@@ -12,6 +12,7 @@ import {
   RecordActionModelType,
   RecordActionType,
 } from ".prisma/client";
+import { BranchQueryType } from "src/middleware/use-branch";
 
 interface CalculatedDiscount {
   percentage: number;
@@ -68,9 +69,11 @@ export class SalesReturnService extends BaseService {
 
   private constructWhere(
     filter?: FilterQueryType,
+    branchQuery?: BranchQueryType,
   ): Prisma.TransactionSalesReturnWhereInput {
     const where: Prisma.TransactionSalesReturnWhereInput = {
       deletedAt: null,
+      branchId: branchQuery?.branchId,
       OR: filter?.search
         ? [
             { returnNumber: { contains: filter.search, mode: "insensitive" } },
@@ -88,9 +91,10 @@ export class SalesReturnService extends BaseService {
 
   private constructArgs(
     filter?: FilterQueryType,
+    branchQuery?: BranchQueryType,
   ): Prisma.TransactionSalesReturnFindManyArgs {
     const args: Prisma.TransactionSalesReturnFindManyArgs = {
-      where: this.constructWhere(filter),
+      where: this.constructWhere(filter, branchQuery),
       skip: filter?.skip,
       take: filter?.limit,
       orderBy: filter?.sortBy
@@ -116,11 +120,16 @@ export class SalesReturnService extends BaseService {
     return args;
   }
 
-  getAllSalesReturns = async (filter?: FilterQueryType) => {
+  getAllSalesReturns = async (
+    filter?: FilterQueryType,
+    branchQuery?: BranchQueryType,
+  ) => {
     const [rows, count] = await Promise.all([
-      this.prisma.transactionSalesReturn.findMany(this.constructArgs(filter)),
+      this.prisma.transactionSalesReturn.findMany(
+        this.constructArgs(filter, branchQuery),
+      ),
       this.prisma.transactionSalesReturn.count({
-        where: this.constructWhere(filter),
+        where: this.constructWhere(filter, branchQuery),
       }),
     ]);
 

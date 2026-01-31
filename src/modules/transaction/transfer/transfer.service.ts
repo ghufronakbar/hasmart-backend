@@ -9,6 +9,7 @@ import {
   RecordActionModelType,
   RecordActionType,
 } from ".prisma/client";
+import { BranchQueryType } from "src/middleware/use-branch";
 
 interface CalculatedItem {
   masterItemId: number;
@@ -28,21 +29,35 @@ export class TransferService extends BaseService {
 
   private constructWhere(
     filter?: FilterQueryType,
+    branchQuery?: BranchQueryType,
   ): Prisma.TransactionTransferWhereInput {
     const where: Prisma.TransactionTransferWhereInput = {
       deletedAt: null,
-      OR: filter?.search
-        ? [{ notes: { contains: filter.search, mode: "insensitive" } }]
-        : undefined,
+      AND: [
+        {
+          OR: filter?.search
+            ? [{ notes: { contains: filter.search, mode: "insensitive" } }]
+            : undefined,
+        },
+        branchQuery?.branchId
+          ? {
+              OR: [
+                { fromId: branchQuery?.branchId },
+                { toId: branchQuery?.branchId },
+              ],
+            }
+          : {},
+      ],
     };
     return where;
   }
 
   private constructArgs(
     filter?: FilterQueryType,
+    branchQuery?: BranchQueryType,
   ): Prisma.TransactionTransferFindManyArgs {
     const args: Prisma.TransactionTransferFindManyArgs = {
-      where: this.constructWhere(filter),
+      where: this.constructWhere(filter, branchQuery),
       skip: filter?.skip,
       take: filter?.limit,
       orderBy: filter?.sortBy
@@ -63,11 +78,16 @@ export class TransferService extends BaseService {
     return args;
   }
 
-  getAllTransfers = async (filter?: FilterQueryType) => {
+  getAllTransfers = async (
+    filter?: FilterQueryType,
+    branchQuery?: BranchQueryType,
+  ) => {
     const [rows, count] = await Promise.all([
-      this.prisma.transactionTransfer.findMany(this.constructArgs(filter)),
+      this.prisma.transactionTransfer.findMany(
+        this.constructArgs(filter, branchQuery),
+      ),
       this.prisma.transactionTransfer.count({
-        where: this.constructWhere(filter),
+        where: this.constructWhere(filter, branchQuery),
       }),
     ]);
 

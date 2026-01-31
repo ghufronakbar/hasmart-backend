@@ -9,6 +9,7 @@ import {
 import { useFilter } from "../../../middleware/use-filter";
 import { useAuth } from "../../../middleware/use-auth";
 import { JwtService } from "../../common/jwt/jwt.service";
+import { useBranch } from "../../../middleware/use-branch";
 
 export class SalesReturnRouter extends BaseRouter {
   constructor(
@@ -24,6 +25,7 @@ export class SalesReturnRouter extends BaseRouter {
       "/",
       useAuth(this.jwtService),
       useFilter(["returnNumber"]),
+      useBranch(),
       asyncHandler(
         async (req, res) => await this.controller.getAllSalesReturns(req, res),
       ),

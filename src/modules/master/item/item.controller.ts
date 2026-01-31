@@ -5,7 +5,6 @@ import {
   ItemBodyType,
   ItemUpdateBodyType,
   ItemParamsType,
-  ItemQueryType,
   VariantBodyType,
   VariantParamsType,
 } from "./item.validator";
@@ -17,23 +16,21 @@ export class ItemController extends BaseController {
 
   getAllItems = async (req: Request, res: Response) => {
     const filter = req.filterQuery;
-    const query: ItemQueryType = {
-      branchId: req.query.branchId
-        ? parseInt(req.query.branchId as string)
-        : undefined,
-    };
-    const { rows, pagination } = await this.service.getAllItems(filter, query);
+    const branchQuery = req.branchQuery;
+    const { rows, pagination } = await this.service.getAllItems(
+      filter,
+      branchQuery,
+    );
     return this.sendList(req, res, rows, pagination, filter);
   };
 
   getItemById = async (req: Request, res: Response) => {
     const params = req.params as unknown as ItemParamsType;
-    const query: ItemQueryType = {
-      branchId: req.query.branchId
-        ? parseInt(req.query.branchId as string)
-        : undefined,
-    };
-    const data = await this.service.getItemById(params.masterItemId, query);
+    const branchQuery = req.branchQuery;
+    const data = await this.service.getItemById(
+      params.masterItemId,
+      branchQuery,
+    );
     return this.sendOk(req, res, data);
   };
 

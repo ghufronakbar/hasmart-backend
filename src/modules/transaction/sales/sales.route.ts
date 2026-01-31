@@ -6,6 +6,7 @@ import { SalesBodySchema, SalesParamsSchema } from "./sales.validator";
 import { useFilter } from "../../../middleware/use-filter";
 import { useAuth } from "../../../middleware/use-auth";
 import { JwtService } from "../../common/jwt/jwt.service";
+import { useBranch } from "../../../middleware/use-branch";
 
 export class SalesRouter extends BaseRouter {
   constructor(
@@ -21,6 +22,7 @@ export class SalesRouter extends BaseRouter {
       "/",
       useAuth(this.jwtService),
       useFilter(["invoiceNumber"]),
+      useBranch(),
       asyncHandler(
         async (req, res) => await this.controller.getAllSales(req, res),
       ),

@@ -3,7 +3,6 @@ import { PrismaService } from "../../common/prisma/prisma.service";
 import {
   ItemBodyType,
   ItemUpdateBodyType,
-  ItemQueryType,
   VariantBodyType,
 } from "./item.validator";
 import {
@@ -14,6 +13,7 @@ import {
 import { BadRequestError, NotFoundError } from "../../../utils/error";
 import { FilterQueryType } from "src/middleware/use-filter";
 import { Prisma } from ".prisma/client";
+import { BranchQueryType } from "src/middleware/use-branch";
 
 export class ItemService extends BaseService {
   constructor(private readonly prisma: PrismaService) {
@@ -111,14 +111,17 @@ export class ItemService extends BaseService {
     };
   }
 
-  getAllItems = async (filter?: FilterQueryType, query?: ItemQueryType) => {
+  getAllItems = async (
+    filter?: FilterQueryType,
+    branchQuery?: BranchQueryType,
+  ) => {
     const [rows, count] = await Promise.all([
       this.prisma.masterItem.findMany(this.constructArgs(filter)),
       this.prisma.masterItem.count({ where: this.constructWhere(filter) }),
     ]);
 
     const mappedRows = (rows as unknown as MasterItemWithIncludes[]).map(
-      (item) => this.mapToListResponse(item, query?.branchId),
+      (item) => this.mapToListResponse(item, branchQuery?.branchId),
     );
 
     const pagination = this.createPagination({
@@ -131,7 +134,7 @@ export class ItemService extends BaseService {
 
   getItemById = async (
     id: number,
-    query?: ItemQueryType,
+    branchQuery?: BranchQueryType,
   ): Promise<ItemResponse> => {
     const item = await this.prisma.masterItem.findFirst({
       where: { id, deletedAt: null },
@@ -159,7 +162,7 @@ export class ItemService extends BaseService {
 
     return this.mapToListResponse(
       item as unknown as MasterItemWithIncludes,
-      query?.branchId,
+      branchQuery?.branchId,
     ) as ItemResponse;
   };
 

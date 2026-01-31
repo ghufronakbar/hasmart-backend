@@ -12,6 +12,7 @@ import {
 import { useFilter } from "../../../middleware/use-filter";
 import { useAuth } from "../../../middleware/use-auth";
 import { JwtService } from "../../common/jwt/jwt.service";
+import { useBranch } from "../../../middleware/use-branch";
 
 export class ItemRouter extends BaseRouter {
   constructor(
@@ -28,6 +29,7 @@ export class ItemRouter extends BaseRouter {
       "/",
       useAuth(this.jwtService),
       useFilter(["name"]),
+      useBranch(),
       asyncHandler(
         async (req, res) => await this.controller.getAllItems(req, res),
       ),
@@ -37,6 +39,7 @@ export class ItemRouter extends BaseRouter {
     this.router.get(
       "/:masterItemId",
       useAuth(this.jwtService),
+      useBranch(),
       validateHandler({ params: ItemParamsSchema }),
       asyncHandler(
         async (req, res) => await this.controller.getItemById(req, res),

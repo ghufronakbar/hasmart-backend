@@ -13,7 +13,11 @@ export class AdjustStockController extends BaseController {
 
   getAllAdjustments = async (req: Request, res: Response) => {
     const filter = req.filterQuery;
-    const { rows, pagination } = await this.service.getAllAdjustments(filter);
+    const branchQuery = req.branchQuery;
+    const { rows, pagination } = await this.service.getAllAdjustments(
+      filter,
+      branchQuery,
+    );
     return this.sendList(req, res, rows, pagination, filter);
   };
 

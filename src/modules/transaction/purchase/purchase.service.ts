@@ -14,6 +14,7 @@ import {
   RecordActionType,
 } from ".prisma/client";
 import { RefreshBuyPriceService } from "../refresh-buy-price/refresh-buy-price.service";
+import { BranchQueryType } from "src/middleware/use-branch";
 
 interface CalculatedDiscount {
   percentage: number;
@@ -45,6 +46,7 @@ export class PurchaseService extends BaseService {
 
   private constructWhere(
     filter?: FilterQueryType,
+    branchQuery?: BranchQueryType,
   ): Prisma.TransactionPurchaseWhereInput {
     const where: Prisma.TransactionPurchaseWhereInput = {
       deletedAt: null,
@@ -54,15 +56,17 @@ export class PurchaseService extends BaseService {
             { notes: { contains: filter.search, mode: "insensitive" } },
           ]
         : undefined,
+      branchId: branchQuery?.branchId,
     };
     return where;
   }
 
   private constructArgs(
     filter?: FilterQueryType,
+    branchQuery?: BranchQueryType,
   ): Prisma.TransactionPurchaseFindManyArgs {
     const args: Prisma.TransactionPurchaseFindManyArgs = {
-      where: this.constructWhere(filter),
+      where: this.constructWhere(filter, branchQuery),
       skip: filter?.skip,
       take: filter?.limit,
       orderBy: filter?.sortBy ? { [filter?.sortBy]: filter?.sort } : undefined,
@@ -85,11 +89,16 @@ export class PurchaseService extends BaseService {
     return args;
   }
 
-  getAllPurchases = async (filter?: FilterQueryType) => {
+  getAllPurchases = async (
+    filter?: FilterQueryType,
+    branchQuery?: BranchQueryType,
+  ) => {
     const [rows, count] = await Promise.all([
-      this.prisma.transactionPurchase.findMany(this.constructArgs(filter)),
+      this.prisma.transactionPurchase.findMany(
+        this.constructArgs(filter, branchQuery),
+      ),
       this.prisma.transactionPurchase.count({
-        where: this.constructWhere(filter),
+        where: this.constructWhere(filter, branchQuery),
       }),
     ]);
 

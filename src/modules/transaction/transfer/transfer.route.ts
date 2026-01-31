@@ -6,6 +6,7 @@ import { TransferBodySchema, TransferParamsSchema } from "./transfer.validator";
 import { useFilter } from "../../../middleware/use-filter";
 import { useAuth } from "../../../middleware/use-auth";
 import { JwtService } from "../../common/jwt/jwt.service";
+import { useBranch } from "../../../middleware/use-branch";
 
 export class TransferRouter extends BaseRouter {
   constructor(
@@ -21,6 +22,7 @@ export class TransferRouter extends BaseRouter {
       "/",
       useAuth(this.jwtService),
       useFilter([]),
+      useBranch(),
       asyncHandler(
         async (req, res) => await this.controller.getAllTransfers(req, res),
       ),

@@ -12,6 +12,7 @@ import {
   RecordActionModelType,
   RecordActionType,
 } from ".prisma/client";
+import { BranchQueryType } from "src/middleware/use-branch";
 
 interface CalculatedAdjustment {
   masterItemId: number;
@@ -32,21 +33,24 @@ export class AdjustStockService extends BaseService {
 
   private constructWhere(
     filter?: FilterQueryType,
+    branchQuery?: BranchQueryType,
   ): Prisma.TransactionAdjustmentWhereInput {
     const where: Prisma.TransactionAdjustmentWhereInput = {
       deletedAt: null,
       OR: filter?.search
         ? [{ notes: { contains: filter.search, mode: "insensitive" } }]
         : undefined,
+      branchId: branchQuery?.branchId,
     };
     return where;
   }
 
   private constructArgs(
     filter?: FilterQueryType,
+    branchQuery?: BranchQueryType,
   ): Prisma.TransactionAdjustmentFindManyArgs {
     const args: Prisma.TransactionAdjustmentFindManyArgs = {
-      where: this.constructWhere(filter),
+      where: this.constructWhere(filter, branchQuery),
       skip: filter?.skip,
       take: filter?.limit,
       orderBy: filter?.sortBy
@@ -61,11 +65,16 @@ export class AdjustStockService extends BaseService {
     return args;
   }
 
-  getAllAdjustments = async (filter?: FilterQueryType) => {
+  getAllAdjustments = async (
+    filter?: FilterQueryType,
+    branchQuery?: BranchQueryType,
+  ) => {
     const [rows, count] = await Promise.all([
-      this.prisma.transactionAdjustment.findMany(this.constructArgs(filter)),
+      this.prisma.transactionAdjustment.findMany(
+        this.constructArgs(filter, branchQuery),
+      ),
       this.prisma.transactionAdjustment.count({
-        where: this.constructWhere(filter),
+        where: this.constructWhere(filter, branchQuery),
       }),
     ]);
 

@@ -36,12 +36,6 @@ export const ItemParamsSchema = z.object({
 
 export type ItemParamsType = z.infer<typeof ItemParamsSchema>;
 
-export const ItemQuerySchema = z.object({
-  branchId: z.coerce.number().optional(),
-});
-
-export type ItemQueryType = z.infer<typeof ItemQuerySchema>;
-
 // Variant Validators
 export const VariantBodySchema = z.object({
   code: z.string().min(1),

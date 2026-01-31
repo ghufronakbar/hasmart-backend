@@ -46,7 +46,7 @@ GET /api/transaction/transfer
 Authorization: Bearer <token>
 ```
 
-**Query:** `search`, `page`, `limit`, `sort`, `sortBy`
+**Query:** `search`, `page`, `limit`, `sort`, `sortBy`, `branchId`
 
 ---
 

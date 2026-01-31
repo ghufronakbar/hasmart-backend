@@ -6,6 +6,7 @@ import { PurchaseBodySchema, PurchaseParamsSchema } from "./purchase.validator";
 import { useFilter } from "../../../middleware/use-filter";
 import { useAuth } from "../../../middleware/use-auth";
 import { JwtService } from "../../common/jwt/jwt.service";
+import { useBranch } from "../../../middleware/use-branch";
 
 export class PurchaseRouter extends BaseRouter {
   constructor(
@@ -21,6 +22,7 @@ export class PurchaseRouter extends BaseRouter {
       "/",
       useAuth(this.jwtService),
       useFilter(["invoiceNumber"]),
+      useBranch(),
       asyncHandler(
         async (req, res) => await this.controller.getAllPurchases(req, res),
       ),

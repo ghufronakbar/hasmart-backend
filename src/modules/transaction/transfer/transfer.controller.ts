@@ -10,7 +10,11 @@ export class TransferController extends BaseController {
 
   getAllTransfers = async (req: Request, res: Response) => {
     const filter = req.filterQuery;
-    const { rows, pagination } = await this.service.getAllTransfers(filter);
+    const branchQuery = req.branchQuery;
+    const { rows, pagination } = await this.service.getAllTransfers(
+      filter,
+      branchQuery,
+    );
     return this.sendList(req, res, rows, pagination, filter);
   };
 

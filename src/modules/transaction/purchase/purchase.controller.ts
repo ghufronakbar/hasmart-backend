@@ -10,7 +10,11 @@ export class PurchaseController extends BaseController {
 
   getAllPurchases = async (req: Request, res: Response) => {
     const filter = req.filterQuery;
-    const { rows, pagination } = await this.service.getAllPurchases(filter);
+    const branchQuery = req.branchQuery;
+    const { rows, pagination } = await this.service.getAllPurchases(
+      filter,
+      branchQuery,
+    );
     return this.sendList(req, res, rows, pagination, filter);
   };
 

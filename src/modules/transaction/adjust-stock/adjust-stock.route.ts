@@ -9,6 +9,7 @@ import {
 import { useFilter } from "../../../middleware/use-filter";
 import { useAuth } from "../../../middleware/use-auth";
 import { JwtService } from "../../common/jwt/jwt.service";
+import { useBranch } from "../../../middleware/use-branch";
 
 export class AdjustStockRouter extends BaseRouter {
   constructor(
@@ -24,6 +25,7 @@ export class AdjustStockRouter extends BaseRouter {
       "/",
       useAuth(this.jwtService),
       useFilter([]),
+      useBranch(),
       asyncHandler(
         async (req, res) => await this.controller.getAllAdjustments(req, res),
       ),
