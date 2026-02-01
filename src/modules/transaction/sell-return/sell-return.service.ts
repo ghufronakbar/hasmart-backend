@@ -119,6 +119,7 @@ export class SellReturnService extends BaseService {
       orderBy: this.constructOrder(filter),
       include: {
         masterMember: { select: { id: true, code: true, name: true } },
+        transactionSell: { select: { id: true, invoiceNumber: true } },
         branch: { select: { id: true, name: true } },
         transactionSellReturnItems: {
           where: { deletedAt: null },
@@ -179,6 +180,7 @@ export class SellReturnService extends BaseService {
       where: { id, deletedAt: null },
       include: {
         masterMember: { select: { id: true, code: true, name: true } },
+        transactionSell: { select: { id: true, invoiceNumber: true } },
         branch: { select: { id: true, name: true } },
         transactionSellReturnItems: {
           where: { deletedAt: null },
@@ -316,7 +318,7 @@ export class SellReturnService extends BaseService {
     const originalInvoice = await this.prisma.transactionSell.findFirst({
       where: {
         invoiceNumber: {
-          equals: data.originalInvoiceCode,
+          equals: data.originalInvoiceNumber,
           mode: "insensitive",
         },
         deletedAt: null,

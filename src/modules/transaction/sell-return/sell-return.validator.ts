@@ -19,7 +19,9 @@ export const SellReturnBodySchema = z.object({
   notes: z.string().optional().default(""),
   taxPercentage: z.number().int().min(0).max(100).optional().default(0),
   items: z.array(SellReturnItemSchema).min(1, "Minimal harus ada 1 item"),
-  originalInvoiceCode: z.string().min(1, "Nomor invoice original wajib diisi"),
+  originalInvoiceNumber: z
+    .string()
+    .min(1, "Nomor invoice original wajib diisi"),
 });
 
 export type SellReturnBodyType = z.infer<typeof SellReturnBodySchema>;

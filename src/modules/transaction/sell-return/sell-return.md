@@ -80,7 +80,7 @@ Authorization: Bearer <token>
   "transactionDate": "2026-01-28T09:00:00Z",
   "dueDate": "2026-02-28T09:00:00Z",
   "memberCode": "MBR001",
-  "originalInvoiceCode": "INV-20260127-0001",
+  "originalInvoiceNumber": "INV-20260127-0001",
   "notes": "Retur barang rusak pengiriman",
   "taxPercentage": 11,
   "items": [
@@ -120,7 +120,7 @@ Authorization: Bearer <token>
 
 1. **Return Number:** Auto-generated `RTG-{YYYYMMDD}-{SEQUENCE}` per branch per hari
 2. **Mandatory Member:** `memberCode` wajib diisi, lookup ke `masterMemberId`
-3. **Mandatory Original Invoice:** `originalInvoiceCode` wajib diisi, validasi ke `TransactionSell`
+3. **Mandatory Original Invoice:** `originalInvoiceNumber` wajib diisi, validasi ke `TransactionSell`
 4. **Unique Items:** Setiap `masterItemVariantId` harus unique dalam 1 transaksi
 5. **Conversion:** `totalQty` = `qty` × `recordedConversion`
 6. **Diskon Bertingkat:** Dihitung secara cascading per item
