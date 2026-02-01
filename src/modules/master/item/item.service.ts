@@ -27,7 +27,11 @@ export class ItemService extends BaseService {
         deletedAt: null,
       },
       include: {
-        masterItem: true,
+        masterItem: {
+          include: {
+            masterItemVariants: true,
+          },
+        },
       },
     });
 
