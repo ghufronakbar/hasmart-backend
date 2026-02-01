@@ -12,7 +12,7 @@ import {
 } from "./user.validator";
 import { useAuth } from "../../../middleware/use-auth";
 import { JwtService } from "../../common/jwt/jwt.service";
-import { useFilter } from "src/middleware/use-filter";
+import { useFilter } from "../../../middleware/use-filter";
 
 export class UserRouter extends BaseRouter {
   constructor(

@@ -57,6 +57,14 @@ export class UserService extends BaseService {
       skip: filter?.skip,
       take: filter?.limit,
       orderBy: this.constructOrder(filter),
+      select: {
+        id: true,
+        name: true,
+        isActive: true,
+        isSuperUser: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     };
     return args;
   }
