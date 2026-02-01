@@ -273,6 +273,18 @@ export class UserService extends BaseService {
       throw new NotFoundError();
     }
 
+    if (user.name !== data.name) {
+      const existingUser = await this.prisma.user.findUnique({
+        where: {
+          name: data.name?.toLowerCase(),
+        },
+      });
+
+      if (existingUser && existingUser.id !== userId) {
+        throw new BadRequestError("Username sudah digunakan");
+      }
+    }
+
     const updatedUser = await this.prisma.user.update({
       where: {
         id: userId,
@@ -348,11 +360,14 @@ export class UserService extends BaseService {
       throw new BadRequestError("Tidak bisa menghapus super user");
     }
 
+    const newUserName = `${user.name}-deleted-${Date.now()}`;
+
     const deletedUser = await this.prisma.user.update({
       where: {
         id: userId,
       },
       data: {
+        name: newUserName,
         deletedAt: new Date(),
       },
     });
