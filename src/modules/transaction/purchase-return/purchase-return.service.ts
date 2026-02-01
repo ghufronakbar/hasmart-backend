@@ -270,6 +270,20 @@ export class PurchaseReturnService extends BaseService {
     data: PurchaseReturnBodyType,
     userId: number,
   ) => {
+    const originalInvoice = await this.prisma.transactionPurchase.findFirst({
+      where: {
+        invoiceNumber: {
+          equals: data.originalInvoiceNumber,
+          mode: "insensitive",
+        },
+        deletedAt: null,
+      },
+    });
+
+    if (!originalInvoice) {
+      throw new BadRequestError("Invoice original tidak ditemukan");
+    }
+
     const { variantMap } = await this.validateAndPrepare(data);
     const calculatedItems = this.calculateItems(data.items, variantMap);
 
@@ -305,6 +319,7 @@ export class PurchaseReturnService extends BaseService {
           recordedTaxAmount,
           recordedTaxPercentage: data.taxPercentage,
           recordedTotalAmount,
+          transactionPurchaseId: originalInvoice.id,
           transactionPurchaseReturnItems: {
             create: calculatedItems.map((item) => ({
               masterItemId: item.masterItemId,

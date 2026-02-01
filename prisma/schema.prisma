@@ -312,7 +312,8 @@ model TransactionPurchase {
   branch   Branch @relation(fields: [branchId], references: [id])
 
   // relation
-  transactionPurchaseItems TransactionPurchaseItem[]
+  transactionPurchaseItems   TransactionPurchaseItem[]
+  transactionPurchaseReturns TransactionPurchaseReturn[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
@@ -377,6 +378,9 @@ model TransactionPurchaseDiscount {
 // input sama seperti TransactionPurchase, tidak ada relasi apapun dengan TransactionPurchase
 model TransactionPurchaseReturn {
   id Int @id @default(autoincrement()) @map("id")
+
+  transactionPurchaseId Int                 @map("transaction_purchase_id")
+  transactionPurchase   TransactionPurchase @relation(fields: [transactionPurchaseId], references: [id])
 
   invoiceNumber   String   @map("invoice_number") // ex: TP-2026-001 (ref number)
   transactionDate DateTime @map("transaction_date") // ex: 2026-01-26 inputable
@@ -655,7 +659,8 @@ model TransactionSell {
   branch   Branch @relation(fields: [branchId], references: [id])
 
   // relation
-  transactionSellItems TransactionSellItem[]
+  transactionSellItems   TransactionSellItem[]
+  transactionSellReturns TransactionSellReturn[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
@@ -719,6 +724,9 @@ model TransactionSellDiscount {
 
 model TransactionSellReturn {
   id Int @id @default(autoincrement()) @map("id")
+
+  transactionSellId Int // untuk cek validitas nanti based on invoiceNumber (ini untuk referensi retur nya di invoice apa)
+  transactionSell   TransactionSell @relation(fields: [transactionSellId], references: [id])
 
   invoiceNumber   String   @map("invoice_number") // Nomor Retur / Ref
   transactionDate DateTime @map("transaction_date")

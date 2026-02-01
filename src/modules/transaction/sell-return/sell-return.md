@@ -80,7 +80,8 @@ Authorization: Bearer <token>
   "transactionDate": "2026-01-28T09:00:00Z",
   "dueDate": "2026-02-28T09:00:00Z",
   "memberCode": "MBR001",
-  "notes": "Retur barang rusak pengiriman (Ref Inv: INV-20260127-0001)",
+  "originalInvoiceCode": "INV-20260127-0001",
+  "notes": "Retur barang rusak pengiriman",
   "taxPercentage": 11,
   "items": [
     {
@@ -119,16 +120,17 @@ Authorization: Bearer <token>
 
 1. **Return Number:** Auto-generated `RTG-{YYYYMMDD}-{SEQUENCE}` per branch per hari
 2. **Mandatory Member:** `memberCode` wajib diisi, lookup ke `masterMemberId`
-3. **Unique Items:** Setiap `masterItemVariantId` harus unique dalam 1 transaksi
-4. **Conversion:** `totalQty` = `qty` × `recordedConversion`
-5. **Diskon Bertingkat:** Dihitung secara cascading per item
-6. **Tax Calculation (Refund Tax):**
+3. **Mandatory Original Invoice:** `originalInvoiceCode` wajib diisi, validasi ke `TransactionSell`
+4. **Unique Items:** Setiap `masterItemVariantId` harus unique dalam 1 transaksi
+5. **Conversion:** `totalQty` = `qty` × `recordedConversion`
+6. **Diskon Bertingkat:** Dihitung secara cascading per item
+7. **Tax Calculation (Refund Tax):**
    - Input: `taxPercentage` (0-100)
    - Tax Base (DPP) = `recordedSubTotalAmount` - `recordedDiscountAmount`
    - `recordedTaxAmount` = Tax Base × (`taxPercentage` / 100)
    - `recordedTotalAmount` = Tax Base + `recordedTaxAmount`
-7. **Stock Refresh:** Otomatis trigger `RefreshStockService.refreshRealStock()`
-8. **Audit:** Setiap CREATE/UPDATE/DELETE tercatat di `RecordAction`
+8. **Stock Refresh:** Otomatis trigger `RefreshStockService.refreshRealStock()`
+9. **Audit:** Setiap CREATE/UPDATE/DELETE tercatat di `RecordAction`
 
 ---
 

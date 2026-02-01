@@ -311,6 +311,22 @@ export class SellReturnService extends BaseService {
 
   createSellReturn = async (data: SellReturnBodyType, userId: number) => {
     const { variantMap, memberId } = await this.validateAndPrepare(data);
+
+    // Validate original invoice
+    const originalInvoice = await this.prisma.transactionSell.findFirst({
+      where: {
+        invoiceNumber: {
+          equals: data.originalInvoiceCode,
+          mode: "insensitive",
+        },
+        deletedAt: null,
+      },
+    });
+
+    if (!originalInvoice) {
+      throw new BadRequestError("Invoice original tidak ditemukan");
+    }
+
     const calculatedItems = this.calculateItems(data.items, variantMap);
 
     // Calculate header totals
@@ -338,6 +354,7 @@ export class SellReturnService extends BaseService {
       const created = await tx.transactionSellReturn.create({
         data: {
           invoiceNumber,
+          transactionSellId: originalInvoice.id,
           transactionDate: data.transactionDate,
           dueDate: data.dueDate,
           notes: data.notes || "",

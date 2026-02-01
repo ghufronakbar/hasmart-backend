@@ -10,7 +10,8 @@ Module ini menyediakan CRUD operations untuk retur barang ke supplier dengan fit
 
 - Nested item dengan variant conversion
 - Diskon bertingkat per item
-- Automatic stock refresh via `RefreshStockService`
+- **Stock Impact**: Increasing stock for returned items.
+- **Original Invoice**: Must provide a valid `originalInvoiceNumber` which exists in `TransactionPurchase` and is not deleted. The return will be linked to this purchase.
 - Audit trail via `RecordAction`
 
 **Note:** Module ini standalone (tidak memiliki FK ke TransactionPurchase), namun secara bisnis merujuk pada invoice pembelian sebelumnya.
@@ -20,7 +21,7 @@ Module ini menyediakan CRUD operations untuk retur barang ke supplier dengan fit
 ## Files
 
 | File                            | Description                                 |
-| ------------------------------- | ------------------------------------------- |
+| :------------------------------ | :------------------------------------------ |
 | `purchase-return.controller.ts` | HTTP request/response handlers              |
 | `purchase-return.service.ts`    | Business logic, calculations, stock refresh |
 | `purchase-return.route.ts`      | Route definitions                           |
@@ -70,7 +71,8 @@ Authorization: Bearer <token>
 ```json
 {
   "invoiceNumber": "RET-2026-001",
-  "transactionDate": "2026-01-28T00:00:00Z",
+  "date": "2024-01-28",
+  "originalInvoiceNumber": "INV/20240128/0001",
   "dueDate": "2026-02-28T00:00:00Z",
   "masterSupplierId": 1,
   "branchId": 1,
