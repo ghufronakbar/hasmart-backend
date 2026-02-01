@@ -1,7 +1,11 @@
 import { BaseController } from "../../../base/base-controller";
 import { PurchaseService } from "./purchase.service";
 import { Request, Response } from "express";
-import { PurchaseBodyType, PurchaseParamsType } from "./purchase.validator";
+import {
+  PurchaseBodyType,
+  PurchaseParamsType,
+  PurchaseInvoiceParamsType,
+} from "./purchase.validator";
 
 export class PurchaseController extends BaseController {
   constructor(private service: PurchaseService) {
@@ -21,6 +25,12 @@ export class PurchaseController extends BaseController {
   getPurchaseById = async (req: Request, res: Response) => {
     const params = req.params as unknown as PurchaseParamsType;
     const data = await this.service.getPurchaseById(params.purchaseId);
+    return this.sendOk(req, res, data);
+  };
+
+  getPurchaseByInvoice = async (req: Request, res: Response) => {
+    const params = req.params as unknown as PurchaseInvoiceParamsType;
+    const data = await this.service.getPurchaseByInvoice(params.invoiceNumber);
     return this.sendOk(req, res, data);
   };
 

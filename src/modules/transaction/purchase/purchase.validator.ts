@@ -31,3 +31,11 @@ export const PurchaseParamsSchema = z.object({
 });
 
 export type PurchaseParamsType = z.infer<typeof PurchaseParamsSchema>;
+
+export const PurchaseInvoiceParamsSchema = z.object({
+  invoiceNumber: z.string().min(1),
+});
+
+export type PurchaseInvoiceParamsType = z.infer<
+  typeof PurchaseInvoiceParamsSchema
+>;

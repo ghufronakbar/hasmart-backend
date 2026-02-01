@@ -191,6 +191,51 @@ export class PurchaseService extends BaseService {
     return data;
   };
 
+  getPurchaseByInvoice = async (invoiceNumber: string) => {
+    const data = await this.prisma.transactionPurchase.findFirst({
+      where: {
+        invoiceNumber: { equals: invoiceNumber, mode: "insensitive" },
+        deletedAt: null,
+      },
+      include: {
+        masterSupplier: { select: { id: true, code: true, name: true } },
+        branch: { select: { id: true, name: true } },
+        transactionPurchaseItems: {
+          where: { deletedAt: null },
+          include: {
+            masterItem: {
+              select: {
+                id: true,
+                name: true,
+                masterItemVariants: {
+                  where: { deletedAt: null },
+                  select: {
+                    id: true,
+                    code: true,
+                    unit: true,
+                    amount: true,
+                    sellPrice: true,
+                  },
+                },
+              },
+            },
+            masterItemVariant: {
+              select: { id: true, code: true, unit: true, amount: true },
+            },
+            transactionPurchaseDiscounts: {
+              where: { deletedAt: null },
+              orderBy: { orderIndex: "asc" },
+            },
+          },
+        },
+      },
+    });
+    if (!data) {
+      throw new NotFoundError();
+    }
+    return data;
+  };
+
   private async validateAndPrepare(data: PurchaseBodyType) {
     // Validate unique variant IDs
     const variantIds = data.items.map((item) => item.masterItemVariantId);

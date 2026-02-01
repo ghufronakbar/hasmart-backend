@@ -2,7 +2,11 @@ import { PurchaseController } from "./purchase.controller";
 import { asyncHandler } from "../../../middleware/error-handler";
 import { validateHandler } from "../../../middleware/validate-handler";
 import { BaseRouter } from "../../../base/base-router";
-import { PurchaseBodySchema, PurchaseParamsSchema } from "./purchase.validator";
+import {
+  PurchaseBodySchema,
+  PurchaseParamsSchema,
+  PurchaseInvoiceParamsSchema,
+} from "./purchase.validator";
 import { useFilter } from "../../../middleware/use-filter";
 import { useAuth } from "../../../middleware/use-auth";
 import { JwtService } from "../../common/jwt/jwt.service";
@@ -43,6 +47,16 @@ export class PurchaseRouter extends BaseRouter {
       validateHandler({ params: PurchaseParamsSchema }),
       asyncHandler(
         async (req, res) => await this.controller.getPurchaseById(req, res),
+      ),
+    );
+
+    this.router.get(
+      "/:invoiceNumber/invoice",
+      useAuth(this.jwtService),
+      validateHandler({ params: PurchaseInvoiceParamsSchema }),
+      asyncHandler(
+        async (req, res) =>
+          await this.controller.getPurchaseByInvoice(req, res),
       ),
     );
 

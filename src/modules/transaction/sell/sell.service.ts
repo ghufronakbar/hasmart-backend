@@ -212,6 +212,50 @@ export class SellService extends BaseService {
     return data;
   };
 
+  getSellByInvoice = async (invoiceNumber: string) => {
+    const data = await this.prisma.transactionSell.findFirst({
+      where: {
+        invoiceNumber: { equals: invoiceNumber, mode: "insensitive" },
+        deletedAt: null,
+      },
+      include: {
+        masterMember: { select: { id: true, code: true, name: true } },
+        branch: { select: { id: true, name: true } },
+        transactionSellItems: {
+          where: { deletedAt: null },
+          include: {
+            masterItem: {
+              select: {
+                id: true,
+                name: true,
+                masterItemVariants: {
+                  select: {
+                    id: true,
+                    code: true,
+                    unit: true,
+                    amount: true,
+                    sellPrice: true,
+                  },
+                },
+              },
+            },
+            masterItemVariant: {
+              select: { id: true, code: true, unit: true, amount: true },
+            },
+            transactionSellDiscounts: {
+              where: { deletedAt: null },
+              orderBy: { orderIndex: "asc" },
+            },
+          },
+        },
+      },
+    });
+    if (!data) {
+      throw new NotFoundError();
+    }
+    return data;
+  };
+
   private async validateAndPrepare(data: SellBodyType) {
     // Validate unique variant IDs
     const variantIds = data.items.map((item) => item.masterItemVariantId);

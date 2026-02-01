@@ -26,3 +26,9 @@ export const SalesParamsSchema = z.object({
 });
 
 export type SalesParamsType = z.infer<typeof SalesParamsSchema>;
+
+export const SalesInvoiceParamsSchema = z.object({
+  invoiceNumber: z.string().min(1),
+});
+
+export type SalesInvoiceParamsType = z.infer<typeof SalesInvoiceParamsSchema>;

@@ -56,6 +56,17 @@ Authorization: Bearer <token>
 
 ---
 
+---
+
+### Get by Invoice Number
+
+```
+GET /api/transaction/purchase/:invoiceNumber/invoice
+Authorization: Bearer <token>
+```
+
+**Response:** Same as Get by ID.
+
 ### Create Purchase
 
 ```

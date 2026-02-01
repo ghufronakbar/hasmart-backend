@@ -2,7 +2,11 @@ import { SellController } from "./sell.controller";
 import { asyncHandler } from "../../../middleware/error-handler";
 import { validateHandler } from "../../../middleware/validate-handler";
 import { BaseRouter } from "../../../base/base-router";
-import { SellBodySchema, SellParamsSchema } from "./sell.validator";
+import {
+  SellBodySchema,
+  SellParamsSchema,
+  SellInvoiceParamsSchema,
+} from "./sell.validator";
 import { useFilter } from "../../../middleware/use-filter";
 import { useAuth } from "../../../middleware/use-auth";
 import { JwtService } from "../../common/jwt/jwt.service";
@@ -43,6 +47,15 @@ export class SellRouter extends BaseRouter {
       validateHandler({ params: SellParamsSchema }),
       asyncHandler(
         async (req, res) => await this.controller.getSellById(req, res),
+      ),
+    );
+
+    this.router.get(
+      "/:invoiceNumber/invoice",
+      useAuth(this.jwtService),
+      validateHandler({ params: SellInvoiceParamsSchema }),
+      asyncHandler(
+        async (req, res) => await this.controller.getSellByInvoice(req, res),
       ),
     );
 

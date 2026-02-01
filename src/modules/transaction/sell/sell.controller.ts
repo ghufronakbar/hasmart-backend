@@ -1,7 +1,11 @@
 import { BaseController } from "../../../base/base-controller";
 import { SellService } from "./sell.service";
 import { Request, Response } from "express";
-import { SellBodyType, SellParamsType } from "./sell.validator";
+import {
+  SellBodyType,
+  SellParamsType,
+  SellInvoiceParamsType,
+} from "./sell.validator";
 
 export class SellController extends BaseController {
   constructor(private service: SellService) {
@@ -21,6 +25,12 @@ export class SellController extends BaseController {
   getSellById = async (req: Request, res: Response) => {
     const params = req.params as unknown as SellParamsType;
     const data = await this.service.getSellById(params.sellId);
+    return this.sendOk(req, res, data);
+  };
+
+  getSellByInvoice = async (req: Request, res: Response) => {
+    const params = req.params as unknown as SellInvoiceParamsType;
+    const data = await this.service.getSellByInvoice(params.invoiceNumber);
     return this.sendOk(req, res, data);
   };
 

@@ -1,7 +1,11 @@
 import { BaseController } from "../../../base/base-controller";
 import { SalesService } from "./sales.service";
 import { Request, Response } from "express";
-import { SalesBodyType, SalesParamsType } from "./sales.validator";
+import {
+  SalesBodyType,
+  SalesParamsType,
+  SalesInvoiceParamsType,
+} from "./sales.validator";
 
 export class SalesController extends BaseController {
   constructor(private service: SalesService) {
@@ -21,6 +25,12 @@ export class SalesController extends BaseController {
   getSalesById = async (req: Request, res: Response) => {
     const params = req.params as unknown as SalesParamsType;
     const data = await this.service.getSalesById(params.salesId);
+    return this.sendOk(req, res, data);
+  };
+
+  getSalesByInvoice = async (req: Request, res: Response) => {
+    const params = req.params as unknown as SalesInvoiceParamsType;
+    const data = await this.service.getSalesByInvoice(params.invoiceNumber);
     return this.sendOk(req, res, data);
   };
 
