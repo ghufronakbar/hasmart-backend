@@ -14,7 +14,7 @@ Module ini menyediakan CRUD operations untuk retur barang ke supplier dengan fit
 - **Original Invoice**: Must provide a valid `originalInvoiceNumber` which exists in `TransactionPurchase` and is not deleted. The return will be linked to this purchase.
 - Audit trail via `RecordAction`
 
-**Note:** Module ini standalone (tidak memiliki FK ke TransactionPurchase), namun secara bisnis merujuk pada invoice pembelian sebelumnya.
+**Note:** Module ini memiliki foreign key ke `TransactionPurchase` (`transactionPurchaseId`) dan akan memvalidasi keberadaan invoice asal.
 
 ---
 

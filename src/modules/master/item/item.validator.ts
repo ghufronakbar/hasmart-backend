@@ -1,3 +1,4 @@
+import { ValidationError } from "../../../utils/error";
 import { z } from "zod";
 
 // Item Validators
@@ -35,6 +36,43 @@ export const ItemParamsSchema = z.object({
 });
 
 export type ItemParamsType = z.infer<typeof ItemParamsSchema>;
+
+export const ItemQuerySchema = z.object({
+  idNotIns: z
+    .string()
+    .optional()
+    .transform((s) => {
+      // undefined => undefined
+      if (s == null) return undefined;
+
+      const trimmed = s.trim();
+
+      // string kosong => undefined
+      if (trimmed === "") return undefined;
+
+      const parts = trimmed.split(",").map((x) => x.trim());
+
+      // token kosong => error (mis: "1,,2" atau "1,2,")
+      if (parts.some((p) => p === "")) {
+        throw new ValidationError(
+          "idNotIns harus berisi angka dengan separator koma",
+        );
+      }
+
+      // harus integer
+      const nums = parts.map((p) => {
+        if (!/^-?\d+$/.test(p)) {
+          throw new ValidationError(`Invalid number: "${p}"`);
+        }
+        return Number(p);
+      });
+
+      // dedupe + sort (hapus kalau tidak perlu)
+      return Array.from(new Set(nums)).sort((a, b) => a - b);
+    }),
+});
+
+export type ItemQueryType = z.infer<typeof ItemQuerySchema>;
 
 // Variant Validators
 export const VariantBodySchema = z.object({

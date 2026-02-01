@@ -92,6 +92,7 @@ export class PurchaseReturnService extends BaseService {
       orderBy: this.constructOrder(filter),
       include: {
         masterSupplier: { select: { id: true, code: true, name: true } },
+        transactionPurchase: { select: { id: true, invoiceNumber: true } },
         branch: { select: { id: true, name: true } },
         transactionPurchaseReturnItems: {
           where: { deletedAt: null },
@@ -152,6 +153,7 @@ export class PurchaseReturnService extends BaseService {
       where: { id, deletedAt: null },
       include: {
         masterSupplier: { select: { id: true, code: true, name: true } },
+        transactionPurchase: { select: { id: true, invoiceNumber: true } },
         branch: { select: { id: true, name: true } },
         transactionPurchaseReturnItems: {
           where: { deletedAt: null },
@@ -400,9 +402,8 @@ export class PurchaseReturnService extends BaseService {
       0,
     );
     const recordedTaxAmount =
-      ((data.taxPercentage / 100) *
-        (recordedSubTotalAmount - recordedDiscountAmount)) /
-      100;
+      (data.taxPercentage / 100) *
+      (recordedSubTotalAmount - recordedDiscountAmount);
     const recordedTotalAmount =
       recordedSubTotalAmount - recordedDiscountAmount + recordedTaxAmount;
 

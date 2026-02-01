@@ -9,6 +9,7 @@ import {
   VariantBodySchema,
   VariantParamsSchema,
   GetVariantParamsSchema,
+  ItemQuerySchema,
 } from "./item.validator";
 import { useFilter } from "../../../middleware/use-filter";
 import { useAuth } from "../../../middleware/use-auth";
@@ -31,6 +32,7 @@ export class ItemRouter extends BaseRouter {
       useAuth(this.jwtService),
       useFilter(["name"]),
       useBranch(),
+      validateHandler({ query: ItemQuerySchema }),
       asyncHandler(
         async (req, res) => await this.controller.getAllItems(req, res),
       ),

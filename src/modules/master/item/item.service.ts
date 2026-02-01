@@ -40,9 +40,14 @@ export class ItemService extends BaseService {
 
   private constructWhere(
     filter?: FilterQueryType,
+    idNotIns?: number[],
   ): Prisma.MasterItemWhereInput {
     const where: Prisma.MasterItemWhereInput = {
       deletedAt: null,
+      id:
+        Array.isArray(idNotIns) && idNotIns.length > 0
+          ? { notIn: idNotIns }
+          : undefined,
       OR: filter?.search
         ? [
             { name: { contains: filter.search, mode: "insensitive" } },
@@ -61,9 +66,10 @@ export class ItemService extends BaseService {
 
   private constructArgs(
     filter?: FilterQueryType,
+    idNotIns?: number[],
   ): Prisma.MasterItemFindManyArgs {
     const args: Prisma.MasterItemFindManyArgs = {
-      where: this.constructWhere(filter),
+      where: this.constructWhere(filter, idNotIns),
       skip: filter?.skip,
       take: filter?.limit,
       orderBy: filter?.sortBy
@@ -141,10 +147,13 @@ export class ItemService extends BaseService {
   getAllItems = async (
     filter?: FilterQueryType,
     branchQuery?: BranchQueryType,
+    idNotIns?: number[],
   ) => {
     const [rows, count] = await Promise.all([
-      this.prisma.masterItem.findMany(this.constructArgs(filter)),
-      this.prisma.masterItem.count({ where: this.constructWhere(filter) }),
+      this.prisma.masterItem.findMany(this.constructArgs(filter, idNotIns)),
+      this.prisma.masterItem.count({
+        where: this.constructWhere(filter, idNotIns),
+      }),
     ]);
 
     const mappedRows = (rows as unknown as MasterItemWithIncludes[]).map(

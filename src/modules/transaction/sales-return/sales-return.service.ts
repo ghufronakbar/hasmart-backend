@@ -345,8 +345,7 @@ export class SalesReturnService extends BaseService {
           recordedSubTotalAmount,
           recordedDiscountAmount,
           recordedTotalAmount,
-          // TODO: ganti kalau bisa custom
-          transactionDate: new Date(),
+          transactionDate: data.transactionDate,
           transactionSalesReturnItems: {
             create: calculatedItems.map((item) => ({
               masterItemId: item.masterItemId,

@@ -8,6 +8,7 @@ import {
   VariantBodyType,
   VariantParamsType,
   GetVariantParamsType,
+  ItemQueryType,
 } from "./item.validator";
 
 export class ItemController extends BaseController {
@@ -18,9 +19,11 @@ export class ItemController extends BaseController {
   getAllItems = async (req: Request, res: Response) => {
     const filter = req.filterQuery;
     const branchQuery = req.branchQuery;
+    const itemQuery = req.query as unknown as ItemQueryType;
     const { rows, pagination } = await this.service.getAllItems(
       filter,
       branchQuery,
+      itemQuery.idNotIns,
     );
     return this.sendList(req, res, rows, pagination, filter);
   };

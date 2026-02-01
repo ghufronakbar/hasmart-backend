@@ -12,6 +12,7 @@ const SalesReturnItemSchema = z.object({
 });
 
 export const SalesReturnBodySchema = z.object({
+  transactionDate: z.coerce.date(),
   branchId: z.number().int().positive(),
   originalInvoiceNumber: z.string().min(1, "Nomor invoice asli wajib diisi"),
   notes: z.string().optional().default(""),
