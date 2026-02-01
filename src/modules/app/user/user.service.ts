@@ -15,6 +15,8 @@ import {
   NotFoundError,
   UnauthorizedError,
 } from "../../../utils/error";
+import { FilterQueryType } from "src/middleware/use-filter";
+import { Prisma } from ".prisma/client";
 
 export class UserService extends BaseService {
   constructor(
@@ -24,6 +26,67 @@ export class UserService extends BaseService {
   ) {
     super();
   }
+
+  private constructWhere(filter?: FilterQueryType): Prisma.UserWhereInput {
+    const where: Prisma.UserWhereInput = {
+      deletedAt: null,
+      OR: filter?.search
+        ? [{ name: { contains: filter.search, mode: "insensitive" } }]
+        : undefined,
+    };
+    if (filter?.dateStart || filter?.dateEnd) {
+      where.createdAt = {};
+
+      if (filter.dateStart) {
+        where.createdAt.gte = filter.dateStart;
+      }
+
+      if (filter.dateEnd) {
+        const nextDay = new Date(filter.dateEnd);
+        nextDay.setDate(nextDay.getDate() + 1);
+
+        where.createdAt.lt = nextDay;
+      }
+    }
+    return where;
+  }
+
+  private constructArgs(filter?: FilterQueryType): Prisma.UserFindManyArgs {
+    const args: Prisma.UserFindManyArgs = {
+      where: this.constructWhere(filter),
+      skip: filter?.skip,
+      take: filter?.limit,
+      orderBy: this.constructOrder(filter),
+    };
+    return args;
+  }
+
+  private constructOrder(
+    filter?: FilterQueryType,
+  ): Prisma.UserOrderByWithRelationInput | undefined {
+    switch (filter?.sortBy) {
+      default:
+        return filter?.sortBy
+          ? { [filter?.sortBy]: filter?.sort }
+          : { id: "desc" };
+    }
+  }
+
+  getAllUsers = async (filter?: FilterQueryType) => {
+    const [rows, count] = await Promise.all([
+      this.prisma.user.findMany(this.constructArgs(filter)),
+      this.prisma.user.count({
+        where: this.constructWhere(filter),
+      }),
+    ]);
+
+    const pagination = this.createPagination({
+      total: count,
+      page: filter?.page || 1,
+      limit: filter?.limit || 10,
+    });
+    return { rows, pagination };
+  };
 
   // cek apakah ada user atau tidak (untuk kebutuhan setup aplikasi pertama kali)
   getStatus = async () => {

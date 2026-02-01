@@ -12,6 +12,7 @@ import {
 } from "./user.validator";
 import { useAuth } from "../../../middleware/use-auth";
 import { JwtService } from "../../common/jwt/jwt.service";
+import { useFilter } from "src/middleware/use-filter";
 
 export class UserRouter extends BaseRouter {
   constructor(
@@ -45,6 +46,16 @@ export class UserRouter extends BaseRouter {
       "/login",
       validateHandler({ body: LoginBodySchema }),
       asyncHandler(async (req, res) => await this.controller.login(req, res)),
+    );
+
+    // GET /api/app/user (Bearer Token Required)
+    this.router.get(
+      "/",
+      useAuth(this.jwtService),
+      useFilter(["name"], false),
+      asyncHandler(
+        async (req, res) => await this.controller.getAllUsers(req, res),
+      ),
     );
 
     // POST /api/app/user (Bearer Token Required)

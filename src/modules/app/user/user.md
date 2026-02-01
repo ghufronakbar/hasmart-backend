@@ -112,6 +112,35 @@ POST /api/app/user/login
 
 ---
 
+### Get All Users (Protected)
+
+```
+GET /api/app/user
+Authorization: Bearer <token>
+```
+
+**Response:**
+
+```json
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "admin",
+      "isActive": true,
+      "isSuperUser": true
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 1
+  }
+}
+```
+
+---
+
 ### Create User (Protected)
 
 ```

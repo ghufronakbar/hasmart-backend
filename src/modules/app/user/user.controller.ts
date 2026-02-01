@@ -32,6 +32,12 @@ export class UserController extends BaseController {
     return this.sendOk(req, res, result);
   };
 
+  getAllUsers = async (req: Request, res: Response) => {
+    const filter = req.filterQuery;
+    const { pagination, rows } = await this.service.getAllUsers(filter);
+    return this.sendList(req, res, rows, pagination, filter);
+  };
+
   createUser = async (req: Request, res: Response) => {
     const data = req.body as CreateUserBodyType;
     const result = await this.service.createUser(data);
