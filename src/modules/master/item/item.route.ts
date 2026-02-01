@@ -8,6 +8,7 @@ import {
   ItemParamsSchema,
   VariantBodySchema,
   VariantParamsSchema,
+  GetVariantParamsSchema,
 } from "./item.validator";
 import { useFilter } from "../../../middleware/use-filter";
 import { useAuth } from "../../../middleware/use-auth";
@@ -105,6 +106,16 @@ export class ItemRouter extends BaseRouter {
       validateHandler({ params: VariantParamsSchema }),
       asyncHandler(
         async (req, res) => await this.controller.deleteVariant(req, res),
+      ),
+    );
+
+    // GET /api/master/item/:masterItemCode/variant
+    this.router.get(
+      "/:masterItemCode/variant",
+      useAuth(this.jwtService),
+      validateHandler({ params: GetVariantParamsSchema }),
+      asyncHandler(
+        async (req, res) => await this.controller.getVariantByCode(req, res),
       ),
     );
   }

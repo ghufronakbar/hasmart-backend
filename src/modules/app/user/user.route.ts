@@ -52,7 +52,7 @@ export class UserRouter extends BaseRouter {
     this.router.get(
       "/",
       useAuth(this.jwtService),
-      useFilter(["name"], false),
+      useFilter(["name", "isActive", "isSuperUser"], false),
       asyncHandler(
         async (req, res) => await this.controller.getAllUsers(req, res),
       ),

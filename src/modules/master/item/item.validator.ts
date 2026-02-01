@@ -53,3 +53,9 @@ export const VariantParamsSchema = z.object({
 });
 
 export type VariantParamsType = z.infer<typeof VariantParamsSchema>;
+
+export const GetVariantParamsSchema = z.object({
+  masterItemCode: z.string().min(1),
+});
+
+export type GetVariantParamsType = z.infer<typeof GetVariantParamsSchema>;

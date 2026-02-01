@@ -175,6 +175,23 @@ Authorization: Bearer <token>
 
 ---
 
+### Get Variant By Code
+
+Retrieve a specific variant by its unique code.
+
+```
+GET /api/master/item/:masterItemCode/variant
+Authorization: Bearer <token>
+```
+
+**Parameters:**
+
+- `masterItemCode` (Path Param) - The code of the variant (e.g. `DET001`). Note: In this route, the parameter is named `masterItemCode` but it maps to the **Variant Code**.
+
+**Response:**
+
+Returns `MasterItemVariant` object including `masterItem`.
+
 ## Response Interface
 
 ```typescript

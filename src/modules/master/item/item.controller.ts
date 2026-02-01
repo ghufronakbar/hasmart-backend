@@ -7,6 +7,7 @@ import {
   ItemParamsType,
   VariantBodyType,
   VariantParamsType,
+  GetVariantParamsType,
 } from "./item.validator";
 
 export class ItemController extends BaseController {
@@ -78,6 +79,12 @@ export class ItemController extends BaseController {
       params.masterItemId,
       params.masterItemVariantId,
     );
+    return this.sendOk(req, res, result);
+  };
+
+  getVariantByCode = async (req: Request, res: Response) => {
+    const params = req.params as unknown as GetVariantParamsType;
+    const result = await this.service.getVariantByCode(params.masterItemCode);
     return this.sendOk(req, res, result);
   };
 }

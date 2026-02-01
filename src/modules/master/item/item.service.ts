@@ -20,6 +20,24 @@ export class ItemService extends BaseService {
     super();
   }
 
+  getVariantByCode = async (code: string) => {
+    const variant = await this.prisma.masterItemVariant.findFirst({
+      where: {
+        code: { equals: code, mode: "insensitive" },
+        deletedAt: null,
+      },
+      include: {
+        masterItem: true,
+      },
+    });
+
+    if (!variant) {
+      throw new NotFoundError();
+    }
+
+    return variant;
+  };
+
   private constructWhere(
     filter?: FilterQueryType,
   ): Prisma.MasterItemWhereInput {
