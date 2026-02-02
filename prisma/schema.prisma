@@ -872,10 +872,14 @@ model TransactionAdjustment {
   masterItemVariantId Int               @map("master_item_variant_id")
   masterItemVariant   MasterItemVariant @relation(fields: [masterItemVariantId], references: [id])
 
-  gapAmount             Int @map("gap_amount") // dalam pack atau sesuai variant
   recordedGapConversion Int @map("recorded_gap_conversion") // merecord conversion dari variant
-  totalGapAmount        Int @map("total_gap_amount") // dalam satuan (1)
-  finalAmount           Int @map("final_amount") // final amount setelah penyesuaian
+
+  inputAmount       Int @map("input_amount") // dalam pack atau sesuai variant
+  totalGapAmount    Int @map("total_gap_amount") // dalam satuan (1)
+  beforeAmount      Int @map("before_amount") // sebelum penyesuaian (dalam pack)
+  beforeTotalAmount Int @map("before_total_amount") // sebelum penyesuaian (dalam satuan 1)
+  finalAmount       Int @map("final_amount") // final amount setelah penyesuaian
+  finalTotalAmount  Int @map("final_total_amount") // final amount setelah penyesuaian (dalam satuan 1)
 
   // branch
   branchId Int    @map("branch_id")

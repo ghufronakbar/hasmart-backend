@@ -17,10 +17,13 @@ import { BranchQueryType } from "src/middleware/use-branch";
 interface CalculatedAdjustment {
   masterItemId: number;
   masterItemVariantId: number;
-  gapAmount: number;
+  beforeAmount: number;
+  beforeTotalAmount: number;
   recordedGapConversion: number;
   totalGapAmount: number;
-  actualQty: number;
+  finalAmount: number;
+  finalTotalAmount: number;
+  inputAmount: number;
 }
 
 export class AdjustStockService extends BaseService {
@@ -255,20 +258,19 @@ export class AdjustStockService extends BaseService {
           throw new BadRequestError("Variant tidak ditemukan");
         }
         const recordedGapConversion = variant.amount;
-
-        // Calculate this variant's actual stock in base units
-        const variantActualStock = item.actualQty * recordedGapConversion;
-
-        // gapAmount represents the quantity in this variant's unit
-        const gapAmount = item.actualQty;
+        const beforeTotalAmount = currentStock * recordedGapConversion;
+        const finalTotalAmount = item.actualQty * recordedGapConversion;
 
         adjustments.push({
           masterItemId: variant.masterItemId,
           masterItemVariantId: item.masterItemVariantId,
-          gapAmount,
+          beforeAmount: currentStock,
+          beforeTotalAmount,
           recordedGapConversion,
           totalGapAmount, // Same for all variants of this item
-          actualQty: item.actualQty,
+          finalAmount: item.actualQty,
+          finalTotalAmount,
+          inputAmount: item.actualQty,
         });
       }
     }
@@ -301,12 +303,14 @@ export class AdjustStockService extends BaseService {
               notes: data.notes || "",
               masterItemId: adj.masterItemId,
               masterItemVariantId: adj.masterItemVariantId,
-              gapAmount: adj.gapAmount,
+              inputAmount: adj.inputAmount,
               recordedGapConversion: adj.recordedGapConversion,
-              // TODO: ganti jika bisa custom
               transactionDate: data.transactionDate,
               totalGapAmount: adj.totalGapAmount,
-              finalAmount: adj.actualQty,
+              finalAmount: adj.finalAmount,
+              beforeAmount: adj.beforeAmount,
+              beforeTotalAmount: adj.beforeTotalAmount,
+              finalTotalAmount: adj.finalTotalAmount,
             },
           }),
         ),
