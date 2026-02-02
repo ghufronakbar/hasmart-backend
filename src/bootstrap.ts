@@ -129,7 +129,7 @@ const itemCategoryRouter = new ItemCategoryRouter(
 );
 
 // init item module
-const itemService = new ItemService(prismaService);
+const itemService = new ItemService(prismaService, refreshBuyPriceService);
 const itemController = new ItemController(itemService);
 const itemRouter = new ItemRouter(itemController, jwtService);
 

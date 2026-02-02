@@ -14,9 +14,13 @@ import { BadRequestError, NotFoundError } from "../../../utils/error";
 import { FilterQueryType } from "src/middleware/use-filter";
 import { Prisma } from ".prisma/client";
 import { BranchQueryType } from "src/middleware/use-branch";
+import { RefreshBuyPriceService } from "../../transaction/refresh-buy-price/refresh-buy-price.service";
 
 export class ItemService extends BaseService {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly refreshBuyPriceService: RefreshBuyPriceService,
+  ) {
     super();
   }
 
@@ -324,6 +328,8 @@ export class ItemService extends BaseService {
       },
     });
 
+    await this.refreshBuyPriceService.refreshBuyPrice(id);
+
     return this.getItemById(id);
   };
 
@@ -358,7 +364,7 @@ export class ItemService extends BaseService {
       throw new NotFoundError();
     }
 
-    return await this.prisma.masterItemVariant.create({
+    const variant = await this.prisma.masterItemVariant.create({
       data: {
         masterItemId,
         unit: data.unit,
@@ -370,6 +376,8 @@ export class ItemService extends BaseService {
         recordedProfitAmount: 0,
       },
     });
+    await this.refreshBuyPriceService.refreshBuyPrice(masterItemId);
+    return variant;
   };
 
   updateVariant = async (
@@ -384,7 +392,7 @@ export class ItemService extends BaseService {
       throw new NotFoundError();
     }
 
-    return await this.prisma.masterItemVariant.update({
+    const updatedVariant = await this.prisma.masterItemVariant.update({
       where: { id: variantId },
       data: {
         unit: data.unit,
@@ -393,6 +401,8 @@ export class ItemService extends BaseService {
         isBaseUnit: data.isBaseUnit,
       },
     });
+    await this.refreshBuyPriceService.refreshBuyPrice(masterItemId);
+    return updatedVariant;
   };
 
   deleteVariant = async (masterItemId: number, variantId: number) => {
@@ -411,9 +421,11 @@ export class ItemService extends BaseService {
       throw new BadRequestError("Item harus memiliki minimal 1 variant");
     }
 
-    return await this.prisma.masterItemVariant.update({
+    const deletedVariant = await this.prisma.masterItemVariant.update({
       where: { id: variantId },
       data: { deletedAt: new Date() },
     });
+    await this.refreshBuyPriceService.refreshBuyPrice(masterItemId);
+    return deletedVariant;
   };
 }
