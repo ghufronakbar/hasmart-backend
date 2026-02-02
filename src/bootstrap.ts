@@ -84,6 +84,11 @@ import { AdjustStockRouter } from "./modules/transaction/adjust-stock/adjust-sto
 import { AdjustStockController } from "./modules/transaction/adjust-stock/adjust-stock.controller";
 import { AdjustStockService } from "./modules/transaction/adjust-stock/adjust-stock.service";
 
+// Overview Module
+import { OverviewRouter } from "./modules/overview/overview/overview.route";
+import { OverviewController } from "./modules/overview/overview/overview.controller";
+import { OverviewService } from "./modules/overview/overview/overview.service";
+
 // Common Services
 import { PrismaService } from "./modules/common/prisma/prisma.service";
 import { PasswordService } from "./modules/common/password/password.service";
@@ -220,6 +225,11 @@ const adjustStockRouter = new AdjustStockRouter(
   jwtService,
 );
 
+// init overview module
+const overviewService = new OverviewService(prismaService);
+const overviewController = new OverviewController(overviewService);
+const overviewRouter = new OverviewRouter(overviewController, jwtService);
+
 // use routers
 api.use("/app/branch", branchRouter.router);
 api.use("/app/user", userRouter.router);
@@ -237,5 +247,6 @@ api.use("/transaction/sell", sellRouter.router);
 api.use("/transaction/sell-return", sellReturnRouter.router);
 api.use("/transaction/transfer", transferRouter.router);
 api.use("/transaction/adjust-stock", adjustStockRouter.router);
+api.use("/overview", overviewRouter.router);
 
 export default api;

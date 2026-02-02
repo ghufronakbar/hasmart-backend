@@ -64,7 +64,7 @@ async function generateModule() {
         process.exit(1);
     }
 
-    const validPrefixes = ['app', 'common', 'master', 'transaction'];
+    const validPrefixes = ['app', 'common', 'master', 'transaction', 'overview', 'report'];
     if (!validPrefixes.includes(prefix)) {
         console.error(`❌ Error: Invalid prefix "${prefix}"`);
         console.log(`Valid prefixes: ${validPrefixes.join(', ')}`);
