@@ -45,12 +45,12 @@ export class AdjustStockService extends BaseService {
             { notes: { contains: filter.search, mode: "insensitive" } },
             {
               masterItem: {
-                name: { contains: filter.search, mode: "insensitive" },
+                code: { contains: filter.search, mode: "insensitive" },
               },
             },
             {
-              masterItemVariant: {
-                code: { contains: filter.search, mode: "insensitive" },
+              masterItem: {
+                name: { contains: filter.search, mode: "insensitive" },
               },
             },
           ]
@@ -87,8 +87,8 @@ export class AdjustStockService extends BaseService {
       orderBy: this.constructOrder(filter),
       include: {
         branch: { select: { id: true, name: true } },
-        masterItem: { select: { id: true, name: true } },
-        masterItemVariant: { select: { id: true, code: true, unit: true } },
+        masterItem: { select: { id: true, name: true, code: true } },
+        masterItemVariant: { select: { id: true, unit: true } },
       },
     };
     return args;
@@ -137,9 +137,9 @@ export class AdjustStockService extends BaseService {
       where: { id, deletedAt: null },
       include: {
         branch: { select: { id: true, name: true } },
-        masterItem: { select: { id: true, name: true } },
+        masterItem: { select: { id: true, name: true, code: true } },
         masterItemVariant: {
-          select: { id: true, code: true, unit: true, amount: true },
+          select: { id: true, unit: true, amount: true },
         },
       },
     });

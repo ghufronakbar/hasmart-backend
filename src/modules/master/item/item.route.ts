@@ -8,7 +8,7 @@ import {
   ItemParamsSchema,
   VariantBodySchema,
   VariantParamsSchema,
-  GetVariantParamsSchema,
+  GetItemByCodeParamsSchema,
   ItemQuerySchema,
 } from "./item.validator";
 import { useFilter } from "../../../middleware/use-filter";
@@ -30,7 +30,7 @@ export class ItemRouter extends BaseRouter {
     this.router.get(
       "/",
       useAuth(this.jwtService),
-      useFilter(["name"]),
+      useFilter(["name", "code"]),
       useBranch(),
       validateHandler({ query: ItemQuerySchema }),
       asyncHandler(
@@ -111,13 +111,13 @@ export class ItemRouter extends BaseRouter {
       ),
     );
 
-    // GET /api/master/item/:masterItemCode/variant
+    // GET /api/master/item/code/:code
     this.router.get(
-      "/:masterItemCode/variant",
+      "/code/:code",
       useAuth(this.jwtService),
-      validateHandler({ params: GetVariantParamsSchema }),
+      validateHandler({ params: GetItemByCodeParamsSchema }),
       asyncHandler(
-        async (req, res) => await this.controller.getVariantByCode(req, res),
+        async (req, res) => await this.controller.getItemByCode(req, res),
       ),
     );
   }

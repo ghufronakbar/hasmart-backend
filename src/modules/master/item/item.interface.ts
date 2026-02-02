@@ -28,7 +28,6 @@ export interface MasterItemWithIncludes extends MasterItem {
 // Response interfaces for consistent API responses
 export interface ItemVariantResponse {
   id: number;
-  code: string;
   unit: string;
   amount: number;
   recordedBuyPrice: number;
@@ -43,6 +42,7 @@ export interface ItemVariantResponse {
 export interface ItemResponse {
   id: number;
   name: string;
+  code: string;
   masterItemCategoryId: number;
   masterSupplierId: number;
   isActive: boolean;
@@ -58,6 +58,7 @@ export interface ItemResponse {
 export interface ItemListResponse {
   id: number;
   name: string;
+  code: string;
   masterItemCategoryId: number;
   masterSupplierId: number;
   isActive: boolean;

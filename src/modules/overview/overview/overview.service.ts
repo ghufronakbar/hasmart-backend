@@ -283,9 +283,10 @@ export class OverviewService extends BaseService {
         masterItem: {
           select: {
             name: true,
+            code: true,
             masterItemVariants: {
               where: { isBaseUnit: true, deletedAt: null },
-              select: { code: true, unit: true },
+              select: { unit: true },
               take: 1,
             },
           },
@@ -297,7 +298,7 @@ export class OverviewService extends BaseService {
 
     return lowStockItems.map((item) => ({
       name: item.masterItem.name,
-      code: item.masterItem.masterItemVariants[0]?.code || "-",
+      code: item.masterItem.code,
       currentStock: item.recordedStock,
       unit: item.masterItem.masterItemVariants[0]?.unit || "PCS",
     }));

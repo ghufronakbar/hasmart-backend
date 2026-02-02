@@ -91,6 +91,7 @@ model MasterItem {
   id Int @id @default(autoincrement()) @map("id")
 
   name String @map("name")
+  code String @unique @map("code") // code bisa dari barcode atau input manual pada realcase harus unique
 
   masterItemCategoryId Int                @map("master_item_category_id")
   masterItemCategory   MasterItemCategory @relation(fields: [masterItemCategoryId], references: [id])
@@ -159,7 +160,6 @@ model ItemBranch {
 model MasterItemVariant {
   id Int @id @default(autoincrement()) @map("id")
 
-  code   String @unique @map("code") // code bisa dari barcode atau input manual pada realcase harus unique
   unit   String @map("unit") // PCS, PACK, BOX
   amount Int    @map("amount") // Konversi ke base unit. Base = 1
 
@@ -342,6 +342,7 @@ model TransactionPurchaseItem {
   recordedSubTotalAmount Int @map("recorded_sub_total_amount") // denormalize dari variantAmount * amount
   recordedDiscountAmount Int @map("recorded_discount_amount") // denormalize dari setiap item discount
   recordedTotalAmount    Int @map("recorded_total_amount") // denormalize dari amount setiap item
+  recordedAfterTaxAmount Int @map("recorded_after_tax_amount") // denormalize dari amount setiap item
 
   purchasePrice Int @map("purchase_price") // harga beli per 1 barang variant
 

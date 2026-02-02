@@ -4,13 +4,13 @@ import { z } from "zod";
 // Item Validators
 export const ItemBodySchema = z.object({
   name: z.string().min(1),
+  code: z.string().min(1),
   masterSupplierId: z.number().int().positive(),
   masterItemCategoryId: z.number().int().positive(),
   isActive: z.boolean().default(true),
   masterItemVariants: z
     .array(
       z.object({
-        code: z.string().min(1),
         unit: z.string().min(1),
         amount: z.number().int().positive(),
         sellPrice: z.number().int().min(0),
@@ -76,7 +76,6 @@ export type ItemQueryType = z.infer<typeof ItemQuerySchema>;
 
 // Variant Validators
 export const VariantBodySchema = z.object({
-  code: z.string().min(1),
   unit: z.string().min(1),
   amount: z.number().int().positive(),
   sellPrice: z.number().int().min(0),
@@ -92,8 +91,8 @@ export const VariantParamsSchema = z.object({
 
 export type VariantParamsType = z.infer<typeof VariantParamsSchema>;
 
-export const GetVariantParamsSchema = z.object({
-  masterItemCode: z.string().min(1),
+export const GetItemByCodeParamsSchema = z.object({
+  code: z.string().min(1),
 });
 
-export type GetVariantParamsType = z.infer<typeof GetVariantParamsSchema>;
+export type GetItemByCodeParamsType = z.infer<typeof GetItemByCodeParamsSchema>;

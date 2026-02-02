@@ -94,8 +94,8 @@ export class TransferService extends BaseService {
         transactionTransferItems: {
           where: { deletedAt: null },
           include: {
-            masterItem: { select: { id: true, name: true } },
-            masterItemVariant: { select: { id: true, code: true, unit: true } },
+            masterItem: { select: { id: true, name: true, code: true } },
+            masterItemVariant: { select: { id: true, unit: true } },
           },
         },
       },
@@ -144,9 +144,9 @@ export class TransferService extends BaseService {
         transactionTransferItems: {
           where: { deletedAt: null },
           include: {
-            masterItem: { select: { id: true, name: true } },
+            masterItem: { select: { id: true, name: true, code: true } },
             masterItemVariant: {
-              select: { id: true, code: true, unit: true, amount: true },
+              select: { id: true, unit: true, amount: true },
             },
           },
         },

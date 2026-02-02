@@ -40,7 +40,7 @@ Authorization: Bearer <token>
 
 **Query Parameters:**
 
-- `search` - Search by name
+- `search` - Search by name or code
 - `page`, `limit`, `sort`, `sortBy` - Pagination
 - `branchId` (optional) - Filter stock by branch
 
@@ -61,6 +61,25 @@ Authorization: Bearer <token>
 
 ---
 
+### Get Item by Code
+
+Retrieve a specific item by its unique code.
+
+```
+GET /api/master/item/code/:code
+Authorization: Bearer <token>
+```
+
+**Parameters:**
+
+- `code` (Path Param) - The code of the item (e.g. `DET001`)
+
+**Response:**
+
+Returns `MasterItem` object including `masterItemVariants`.
+
+---
+
 ### Create Item
 
 ```
@@ -73,19 +92,18 @@ Authorization: Bearer <token>
 ```json
 {
   "name": "Detergen Merk ABC",
+  "code": "DET001",
   "masterSupplierId": 1,
   "masterItemCategoryId": 1,
   "isActive": true,
   "masterItemVariants": [
     {
-      "code": "DET001",
       "unit": "PCS",
       "amount": 1,
       "sellPrice": 15000,
       "isBaseUnit": true
     },
     {
-      "code": "DET002",
       "unit": "PACK",
       "amount": 12,
       "sellPrice": 170000,
@@ -95,7 +113,7 @@ Authorization: Bearer <token>
 }
 ```
 
-> **Note:** Minimal harus ada 1 variant. Jika code variant sudah ada (soft deleted), akan di-restore.
+> **Note:** Minimal harus ada 1 variant. Code di level item, bukan di variant.
 
 ---
 
@@ -143,7 +161,6 @@ Authorization: Bearer <token>
 
 ```json
 {
-  "code": "DET003",
   "unit": "BOX",
   "amount": 48,
   "sellPrice": 650000,
@@ -175,29 +192,13 @@ Authorization: Bearer <token>
 
 ---
 
-### Get Variant By Code
-
-Retrieve a specific variant by its unique code.
-
-```
-GET /api/master/item/:masterItemCode/variant
-Authorization: Bearer <token>
-```
-
-**Parameters:**
-
-- `masterItemCode` (Path Param) - The code of the variant (e.g. `DET001`). Note: In this route, the parameter is named `masterItemCode` but it maps to the **Variant Code**.
-
-**Response:**
-
-Returns `MasterItemVariant` object including `masterItem`.
-
 ## Response Interface
 
 ```typescript
 interface ItemResponse {
   id: number;
   name: string;
+  code: string;
   masterItemCategoryId: number;
   masterSupplierId: number;
   isActive: boolean;
@@ -206,6 +207,19 @@ interface ItemResponse {
   masterItemCategory: { id; code; name };
   masterSupplier: { id; code; name };
   masterItemVariants: ItemVariantResponse[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface ItemVariantResponse {
+  id: number;
+  unit: string;
+  amount: number;
+  recordedBuyPrice: number;
+  recordedProfitPercentage: number;
+  recordedProfitAmount: number;
+  sellPrice: number;
+  isBaseUnit: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -218,8 +232,8 @@ interface ItemResponse {
 ## Business Rules
 
 - Supplier dan Category harus valid (tidak deleted)
-- Variant code harus unique secara global
-- Variant code otomatis uppercase
+- Item code harus unique secara global
+- Item code otomatis uppercase
 - Jika create dengan code yang sudah di-soft-delete, akan restore
 - Item harus memiliki minimal 1 variant
 - Soft delete dengan `deletedAt`
@@ -228,6 +242,6 @@ interface ItemResponse {
 
 ## Database Models
 
-- `MasterItem` - Item master data
+- `MasterItem` - Item master data (termasuk `code`)
 - `MasterItemVariant` - Unit/packaging variants
 - `ItemBranch` - Stock per branch (pivot)

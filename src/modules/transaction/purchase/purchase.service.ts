@@ -32,6 +32,7 @@ interface CalculatedItem {
   recordedSubTotalAmount: number;
   recordedDiscountAmount: number;
   recordedTotalAmount: number;
+  recordedAfterTaxAmount: number;
   discounts: CalculatedDiscount[];
 }
 
@@ -98,8 +99,8 @@ export class PurchaseService extends BaseService {
         transactionPurchaseItems: {
           where: { deletedAt: null },
           include: {
-            masterItem: { select: { id: true, name: true } },
-            masterItemVariant: { select: { id: true, code: true, unit: true } },
+            masterItem: { select: { id: true, name: true, code: true } },
+            masterItemVariant: { select: { id: true, unit: true } },
             transactionPurchaseDiscounts: {
               where: { deletedAt: null },
               orderBy: { orderIndex: "asc" },
@@ -162,11 +163,11 @@ export class PurchaseService extends BaseService {
               select: {
                 id: true,
                 name: true,
+                code: true,
                 masterItemVariants: {
                   where: { deletedAt: null },
                   select: {
                     id: true,
-                    code: true,
                     unit: true,
                     amount: true,
                     sellPrice: true,
@@ -175,7 +176,7 @@ export class PurchaseService extends BaseService {
               },
             },
             masterItemVariant: {
-              select: { id: true, code: true, unit: true, amount: true },
+              select: { id: true, unit: true, amount: true },
             },
             transactionPurchaseDiscounts: {
               where: { deletedAt: null },
@@ -207,11 +208,11 @@ export class PurchaseService extends BaseService {
               select: {
                 id: true,
                 name: true,
+                code: true,
                 masterItemVariants: {
                   where: { deletedAt: null },
                   select: {
                     id: true,
-                    code: true,
                     unit: true,
                     amount: true,
                     sellPrice: true,
@@ -220,7 +221,7 @@ export class PurchaseService extends BaseService {
               },
             },
             masterItemVariant: {
-              select: { id: true, code: true, unit: true, amount: true },
+              select: { id: true, unit: true, amount: true },
             },
             transactionPurchaseDiscounts: {
               where: { deletedAt: null },
@@ -286,6 +287,7 @@ export class PurchaseService extends BaseService {
       number,
       { id: number; masterItemId: number; amount: number }
     >,
+    taxPercentage: number,
   ): CalculatedItem[] {
     return items.map((item) => {
       const variant = variantMap.get(item.masterItemVariantId)!;
@@ -312,6 +314,8 @@ export class PurchaseService extends BaseService {
       );
 
       const recordedTotalAmount = recordedSubTotalAmount - totalDiscountAmount;
+      const recordedAfterTaxAmount =
+        recordedTotalAmount + (recordedTotalAmount * taxPercentage) / 100;
 
       return {
         masterItemId: variant.masterItemId,
@@ -323,6 +327,7 @@ export class PurchaseService extends BaseService {
         recordedSubTotalAmount,
         recordedDiscountAmount: totalDiscountAmount,
         recordedTotalAmount,
+        recordedAfterTaxAmount,
         discounts,
       };
     });
@@ -330,7 +335,11 @@ export class PurchaseService extends BaseService {
 
   createPurchase = async (data: PurchaseBodyType, userId: number) => {
     const { variantMap } = await this.validateAndPrepare(data);
-    const calculatedItems = this.calculateItems(data.items, variantMap);
+    const calculatedItems = this.calculateItems(
+      data.items,
+      variantMap,
+      data.taxPercentage,
+    );
 
     // Calculate header totals
     const recordedSubTotalAmount = calculatedItems.reduce(
@@ -375,6 +384,7 @@ export class PurchaseService extends BaseService {
               recordedSubTotalAmount: item.recordedSubTotalAmount,
               recordedDiscountAmount: item.recordedDiscountAmount,
               recordedTotalAmount: item.recordedTotalAmount,
+              recordedAfterTaxAmount: item.recordedAfterTaxAmount,
               transactionPurchaseDiscounts: {
                 create: item.discounts.map((d) => ({
                   orderIndex: d.orderIndex,
@@ -435,7 +445,11 @@ export class PurchaseService extends BaseService {
     }
 
     const { variantMap } = await this.validateAndPrepare(data);
-    const calculatedItems = this.calculateItems(data.items, variantMap);
+    const calculatedItems = this.calculateItems(
+      data.items,
+      variantMap,
+      data.taxPercentage,
+    );
 
     // Calculate header totals
     const recordedSubTotalAmount = calculatedItems.reduce(
@@ -497,6 +511,7 @@ export class PurchaseService extends BaseService {
               recordedSubTotalAmount: item.recordedSubTotalAmount,
               recordedDiscountAmount: item.recordedDiscountAmount,
               recordedTotalAmount: item.recordedTotalAmount,
+              recordedAfterTaxAmount: item.recordedAfterTaxAmount,
               transactionPurchaseDiscounts: {
                 create: item.discounts.map((d) => ({
                   orderIndex: d.orderIndex,

@@ -97,8 +97,8 @@ export class PurchaseReturnService extends BaseService {
         transactionPurchaseReturnItems: {
           where: { deletedAt: null },
           include: {
-            masterItem: { select: { id: true, name: true } },
-            masterItemVariant: { select: { id: true, code: true, unit: true } },
+            masterItem: { select: { id: true, name: true, code: true } },
+            masterItemVariant: { select: { id: true, unit: true } },
             transactionPurchaseReturnDiscounts: {
               where: { deletedAt: null },
               orderBy: { orderIndex: "asc" },
@@ -158,9 +158,9 @@ export class PurchaseReturnService extends BaseService {
         transactionPurchaseReturnItems: {
           where: { deletedAt: null },
           include: {
-            masterItem: { select: { id: true, name: true } },
+            masterItem: { select: { id: true, name: true, code: true } },
             masterItemVariant: {
-              select: { id: true, code: true, unit: true, amount: true },
+              select: { id: true, unit: true, amount: true },
             },
             transactionPurchaseReturnDiscounts: {
               where: { deletedAt: null },

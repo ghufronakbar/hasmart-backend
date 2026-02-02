@@ -120,8 +120,8 @@ export class SellService extends BaseService {
         transactionSellItems: {
           where: { deletedAt: null },
           include: {
-            masterItem: { select: { id: true, name: true } },
-            masterItemVariant: { select: { id: true, code: true, unit: true } },
+            masterItem: { select: { id: true, name: true, code: true } },
+            masterItemVariant: { select: { id: true, unit: true } },
             transactionSellDiscounts: {
               where: { deletedAt: null },
               orderBy: { orderIndex: "asc" },
@@ -184,10 +184,10 @@ export class SellService extends BaseService {
               select: {
                 id: true,
                 name: true,
+                code: true,
                 masterItemVariants: {
                   select: {
                     id: true,
-                    code: true,
                     unit: true,
                     amount: true,
                     sellPrice: true,
@@ -196,7 +196,7 @@ export class SellService extends BaseService {
               },
             },
             masterItemVariant: {
-              select: { id: true, code: true, unit: true, amount: true },
+              select: { id: true, unit: true, amount: true },
             },
             transactionSellDiscounts: {
               where: { deletedAt: null },
@@ -228,10 +228,10 @@ export class SellService extends BaseService {
               select: {
                 id: true,
                 name: true,
+                code: true,
                 masterItemVariants: {
                   select: {
                     id: true,
-                    code: true,
                     unit: true,
                     amount: true,
                     sellPrice: true,
@@ -240,7 +240,7 @@ export class SellService extends BaseService {
               },
             },
             masterItemVariant: {
-              select: { id: true, code: true, unit: true, amount: true },
+              select: { id: true, unit: true, amount: true },
             },
             transactionSellDiscounts: {
               where: { deletedAt: null },

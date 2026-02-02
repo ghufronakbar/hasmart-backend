@@ -119,8 +119,8 @@ export class SalesService extends BaseService {
         transactionSalesItems: {
           where: { deletedAt: null },
           include: {
-            masterItem: { select: { id: true, name: true } },
-            masterItemVariant: { select: { id: true, code: true, unit: true } },
+            masterItem: { select: { id: true, name: true, code: true } },
+            masterItemVariant: { select: { id: true, unit: true } },
             transactionSalesDiscounts: {
               where: { deletedAt: null },
               orderBy: { orderIndex: "asc" },
@@ -179,9 +179,9 @@ export class SalesService extends BaseService {
         transactionSalesItems: {
           where: { deletedAt: null },
           include: {
-            masterItem: { select: { id: true, name: true } },
+            masterItem: { select: { id: true, name: true, code: true } },
             masterItemVariant: {
-              select: { id: true, code: true, unit: true, amount: true },
+              select: { id: true, unit: true, amount: true },
             },
             transactionSalesDiscounts: {
               where: { deletedAt: null },
@@ -209,9 +209,9 @@ export class SalesService extends BaseService {
         transactionSalesItems: {
           where: { deletedAt: null },
           include: {
-            masterItem: { select: { id: true, name: true } },
+            masterItem: { select: { id: true, name: true, code: true } },
             masterItemVariant: {
-              select: { id: true, code: true, unit: true, amount: true },
+              select: { id: true, unit: true, amount: true },
             },
             transactionSalesDiscounts: {
               where: { deletedAt: null },

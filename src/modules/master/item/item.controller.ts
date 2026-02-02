@@ -7,7 +7,7 @@ import {
   ItemParamsType,
   VariantBodyType,
   VariantParamsType,
-  GetVariantParamsType,
+  GetItemByCodeParamsType,
   ItemQueryType,
 } from "./item.validator";
 
@@ -85,9 +85,9 @@ export class ItemController extends BaseController {
     return this.sendOk(req, res, result);
   };
 
-  getVariantByCode = async (req: Request, res: Response) => {
-    const params = req.params as unknown as GetVariantParamsType;
-    const result = await this.service.getVariantByCode(params.masterItemCode);
+  getItemByCode = async (req: Request, res: Response) => {
+    const params = req.params as unknown as GetItemByCodeParamsType;
+    const result = await this.service.getItemByCode(params.code);
     return this.sendOk(req, res, result);
   };
 }

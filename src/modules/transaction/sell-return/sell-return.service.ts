@@ -124,8 +124,8 @@ export class SellReturnService extends BaseService {
         transactionSellReturnItems: {
           where: { deletedAt: null },
           include: {
-            masterItem: { select: { id: true, name: true } },
-            masterItemVariant: { select: { id: true, code: true, unit: true } },
+            masterItem: { select: { id: true, name: true, code: true } },
+            masterItemVariant: { select: { id: true, unit: true } },
             transactionSellReturnDiscounts: {
               where: { deletedAt: null },
               orderBy: { orderIndex: "asc" },
@@ -189,10 +189,10 @@ export class SellReturnService extends BaseService {
               select: {
                 id: true,
                 name: true,
+                code: true,
                 masterItemVariants: {
                   select: {
                     id: true,
-                    code: true,
                     unit: true,
                     amount: true,
                     sellPrice: true,
@@ -201,7 +201,7 @@ export class SellReturnService extends BaseService {
               },
             },
             masterItemVariant: {
-              select: { id: true, code: true, unit: true, amount: true },
+              select: { id: true, unit: true, amount: true },
             },
             transactionSellReturnDiscounts: {
               where: { deletedAt: null },

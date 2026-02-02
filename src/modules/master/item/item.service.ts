@@ -20,26 +20,31 @@ export class ItemService extends BaseService {
     super();
   }
 
-  getVariantByCode = async (code: string) => {
-    const variant = await this.prisma.masterItemVariant.findFirst({
+  getItemByCode = async (code: string) => {
+    const item = await this.prisma.masterItem.findFirst({
       where: {
         code: { equals: code, mode: "insensitive" },
         deletedAt: null,
       },
       include: {
-        masterItem: {
-          include: {
-            masterItemVariants: true,
-          },
+        masterItemCategory: {
+          select: { id: true, code: true, name: true },
+        },
+        masterSupplier: {
+          select: { id: true, code: true, name: true },
+        },
+        masterItemVariants: {
+          where: { deletedAt: null },
+          orderBy: { isBaseUnit: "desc" },
         },
       },
     });
 
-    if (!variant) {
+    if (!item) {
       throw new NotFoundError();
     }
 
-    return variant;
+    return item;
   };
 
   private constructWhere(
@@ -55,13 +60,7 @@ export class ItemService extends BaseService {
       OR: filter?.search
         ? [
             { name: { contains: filter.search, mode: "insensitive" } },
-            {
-              masterItemVariants: {
-                some: {
-                  code: { contains: filter.search, mode: "insensitive" },
-                },
-              },
-            },
+            { code: { contains: filter.search, mode: "insensitive" } },
           ]
         : undefined,
     };
@@ -123,6 +122,7 @@ export class ItemService extends BaseService {
     return {
       id: item.id,
       name: item.name,
+      code: item.code,
       masterItemCategoryId: item.masterItemCategoryId,
       masterSupplierId: item.masterSupplierId,
       isActive: item.isActive,
@@ -132,7 +132,6 @@ export class ItemService extends BaseService {
       masterSupplier: item.masterSupplier,
       masterItemVariants: item.masterItemVariants.map((v) => ({
         id: v.id,
-        code: v.code,
         unit: v.unit,
         amount: v.amount,
         recordedBuyPrice: v.recordedBuyPrice,
@@ -223,40 +222,57 @@ export class ItemService extends BaseService {
       throw new BadRequestError("Kategori tidak ditemukan");
     }
 
-    // Check for duplicate variant codes and handle restore
-    const variantCodes = data.masterItemVariants.map((v) =>
-      v.code.toUpperCase(),
-    );
-    const existingVariants = await this.prisma.masterItemVariant.findMany({
-      where: { code: { in: variantCodes } },
+    // Check for duplicate item code
+    const upperCode = data.code.toUpperCase();
+    const existingItem = await this.prisma.masterItem.findFirst({
+      where: { code: upperCode },
     });
-    const existingVariantCodes = existingVariants.map((v) => v.code);
-
-    for (const existing of existingVariants) {
-      if (existing.deletedAt === null) {
-        throw new BadRequestError(
-          `Kode variant "${existing.code}" sudah digunakan`,
-        );
-      }
+    if (existingItem && existingItem.deletedAt === null) {
+      throw new BadRequestError(`Kode item "${upperCode}" sudah digunakan`);
     }
 
     let itemId = 0;
 
     await this.prisma.$transaction(async (tx) => {
-      const item = await this.prisma.masterItem.create({
-        data: {
-          name: data.name,
-          masterSupplierId: data.masterSupplierId,
-          masterItemCategoryId: data.masterItemCategoryId,
-          isActive: data.isActive,
-          recordedBuyPrice: 0,
-          masterItemVariants: {
-            create: data.masterItemVariants
-              .filter(
-                (v) => !existingVariantCodes.includes(v.code.toUpperCase()),
-              )
-              .map((v) => ({
-                code: v.code.toUpperCase(),
+      // If item code was soft deleted, restore it
+      if (existingItem && existingItem.deletedAt !== null) {
+        await this.prisma.masterItem.update({
+          where: { id: existingItem.id },
+          data: {
+            name: data.name,
+            masterSupplierId: data.masterSupplierId,
+            masterItemCategoryId: data.masterItemCategoryId,
+            isActive: data.isActive,
+            deletedAt: null,
+          },
+        });
+        itemId = existingItem.id;
+        // Create variants for restored item
+        for (const v of data.masterItemVariants) {
+          await this.prisma.masterItemVariant.create({
+            data: {
+              masterItemId: itemId,
+              unit: v.unit,
+              amount: v.amount,
+              sellPrice: v.sellPrice,
+              isBaseUnit: v.isBaseUnit,
+              recordedBuyPrice: 0,
+              recordedProfitPercentage: 0,
+              recordedProfitAmount: 0,
+            },
+          });
+        }
+      } else {
+        const item = await this.prisma.masterItem.create({
+          data: {
+            name: data.name,
+            code: upperCode,
+            masterSupplierId: data.masterSupplierId,
+            masterItemCategoryId: data.masterItemCategoryId,
+            isActive: data.isActive,
+            recordedBuyPrice: 0,
+            masterItemVariants: {
+              create: data.masterItemVariants.map((v) => ({
                 unit: v.unit,
                 amount: v.amount,
                 sellPrice: v.sellPrice,
@@ -265,40 +281,10 @@ export class ItemService extends BaseService {
                 recordedProfitPercentage: 0,
                 recordedProfitAmount: 0,
               })),
+            },
           },
-        },
-        include: {
-          masterItemCategory: {
-            select: { id: true, code: true, name: true },
-          },
-          masterSupplier: {
-            select: { id: true, code: true, name: true },
-          },
-          masterItemVariants: {
-            where: { deletedAt: null },
-          },
-        },
-      });
-      itemId = item.id;
-      for (const existing of existingVariants) {
-        if (existing.deletedAt !== null) {
-          const newVariant = data.masterItemVariants.find(
-            (v) => v.code.toUpperCase() === existing.code,
-          );
-          if (newVariant) {
-            await this.prisma.masterItemVariant.update({
-              where: { id: existing.id },
-              data: {
-                masterItemId: item.id,
-                unit: newVariant.unit,
-                amount: newVariant.amount,
-                sellPrice: newVariant.sellPrice,
-                isBaseUnit: newVariant.isBaseUnit,
-                deletedAt: null,
-              },
-            });
-          }
-        }
+        });
+        itemId = item.id;
       }
     });
     return this.getItemById(itemId);
@@ -372,36 +358,9 @@ export class ItemService extends BaseService {
       throw new NotFoundError();
     }
 
-    const upperCode = data.code.toUpperCase();
-
-    // Check if code exists
-    const existing = await this.prisma.masterItemVariant.findFirst({
-      where: { code: upperCode },
-    });
-
-    if (existing) {
-      if (existing.deletedAt === null) {
-        throw new BadRequestError("Kode variant sudah digunakan");
-      } else {
-        // Restore
-        return await this.prisma.masterItemVariant.update({
-          where: { id: existing.id },
-          data: {
-            masterItemId,
-            unit: data.unit,
-            amount: data.amount,
-            sellPrice: data.sellPrice,
-            isBaseUnit: data.isBaseUnit,
-            deletedAt: null,
-          },
-        });
-      }
-    }
-
     return await this.prisma.masterItemVariant.create({
       data: {
         masterItemId,
-        code: upperCode,
         unit: data.unit,
         amount: data.amount,
         sellPrice: data.sellPrice,
@@ -425,24 +384,9 @@ export class ItemService extends BaseService {
       throw new NotFoundError();
     }
 
-    const upperCode = data.code.toUpperCase();
-
-    // Check if code is used by another variant
-    const codeCheck = await this.prisma.masterItemVariant.findFirst({
-      where: {
-        code: upperCode,
-        deletedAt: null,
-        NOT: { id: variantId },
-      },
-    });
-    if (codeCheck) {
-      throw new BadRequestError("Kode variant sudah digunakan");
-    }
-
     return await this.prisma.masterItemVariant.update({
       where: { id: variantId },
       data: {
-        code: upperCode,
         unit: data.unit,
         amount: data.amount,
         sellPrice: data.sellPrice,

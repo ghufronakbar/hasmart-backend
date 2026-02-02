@@ -18,7 +18,7 @@ export class RefreshBuyPriceService extends BaseService {
       this.prisma.transactionPurchaseItem.aggregate({
         _sum: {
           totalQty: true,
-          recordedTotalAmount: true,
+          recordedAfterTaxAmount: true,
         },
         where: {
           masterItemId: masterItemId,
@@ -55,11 +55,15 @@ export class RefreshBuyPriceService extends BaseService {
       }),
     ]);
 
+    console.log("purchaseAgg", purchaseAgg);
+    console.log("returnAgg", returnAgg);
+    console.log("variants", variants);
+
     // 2. Hitung Average Buy Price (Base Unit)
     const totalQty =
       (purchaseAgg._sum.totalQty ?? 0) - (returnAgg._sum.totalQty ?? 0);
     const totalAmount =
-      (purchaseAgg._sum.recordedTotalAmount ?? 0) -
+      (purchaseAgg._sum.recordedAfterTaxAmount ?? 0) -
       (returnAgg._sum.recordedTotalAmount ?? 0);
 
     let avgBuyPriceBaseUnit = 0;
