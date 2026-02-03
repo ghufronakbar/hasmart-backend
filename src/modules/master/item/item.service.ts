@@ -218,6 +218,22 @@ export class ItemService extends BaseService {
       throw new BadRequestError("Supplier tidak ditemukan");
     }
 
+    let countBaseUnit = 0;
+
+    for (const variant of data.masterItemVariants) {
+      if (variant.amount === 1) {
+        countBaseUnit++;
+      }
+    }
+
+    if (countBaseUnit > 1) {
+      throw new BadRequestError("Hanya boleh ada 1 base unit");
+    }
+
+    if (countBaseUnit < 1) {
+      throw new BadRequestError("Harus ada 1 base unit");
+    }
+
     // Validate category exists
     const category = await this.prisma.masterItemCategory.findFirst({
       where: { id: data.masterItemCategoryId, deletedAt: null },
@@ -259,7 +275,7 @@ export class ItemService extends BaseService {
               unit: v.unit,
               amount: v.amount,
               sellPrice: v.sellPrice,
-              isBaseUnit: v.isBaseUnit,
+              isBaseUnit: v.amount === 1,
               recordedBuyPrice: 0,
               recordedProfitPercentage: 0,
               recordedProfitAmount: 0,
@@ -280,7 +296,7 @@ export class ItemService extends BaseService {
                 unit: v.unit,
                 amount: v.amount,
                 sellPrice: v.sellPrice,
-                isBaseUnit: v.isBaseUnit,
+                isBaseUnit: v.amount === 1,
                 recordedBuyPrice: 0,
                 recordedProfitPercentage: 0,
                 recordedProfitAmount: 0,

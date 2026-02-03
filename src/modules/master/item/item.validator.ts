@@ -14,7 +14,6 @@ export const ItemBodySchema = z.object({
         unit: z.string().min(1),
         amount: z.number().int().positive(),
         sellPrice: z.number().int().min(0),
-        isBaseUnit: z.boolean(),
       }),
     )
     .min(1, "Minimal harus ada 1 variant"),
