@@ -13,10 +13,11 @@ import {
   RecordActionType,
 } from ".prisma/client";
 import { BranchQueryType } from "src/middleware/use-branch";
+import { Decimal } from "@prisma/client/runtime/library";
 
 interface CalculatedDiscount {
-  percentage: number;
-  recordedAmount: number;
+  percentage: Decimal;
+  recordedAmount: Decimal;
   orderIndex: number;
 }
 
@@ -26,10 +27,10 @@ interface CalculatedItem {
   qty: number;
   recordedConversion: number;
   totalQty: number;
-  salesPrice: number;
-  recordedSubTotalAmount: number;
-  recordedDiscountAmount: number;
-  recordedTotalAmount: number;
+  salesPrice: Decimal;
+  recordedSubTotalAmount: Decimal;
+  recordedDiscountAmount: Decimal;
+  recordedTotalAmount: Decimal;
   discounts: CalculatedDiscount[];
 }
 
@@ -277,18 +278,17 @@ export class SalesReturnService extends BaseService {
       const variant = variantMap.get(item.masterItemVariantId)!;
       const recordedConversion = variant.amount;
       const totalQty = item.qty * recordedConversion;
-      const recordedSubTotalAmount = item.qty * item.salesPrice;
+      // Decimal: qty * salesPrice
+      const recordedSubTotalAmount = item.salesPrice.mul(item.qty);
 
-      // Calculate discounts
+      // Calculate discounts using Decimal methods
       let runningAmount = recordedSubTotalAmount;
-      let totalDiscountAmount = 0;
+      let totalDiscountAmount = new Decimal(0);
       const discounts: CalculatedDiscount[] = (item.discounts || []).map(
         (d, index) => {
-          const discountAmount = Math.floor(
-            (runningAmount * d.percentage) / 100,
-          );
-          totalDiscountAmount += discountAmount;
-          runningAmount -= discountAmount;
+          const discountAmount = runningAmount.mul(d.percentage).div(100);
+          totalDiscountAmount = totalDiscountAmount.add(discountAmount);
+          runningAmount = runningAmount.sub(discountAmount);
           return {
             percentage: d.percentage,
             recordedAmount: discountAmount,
@@ -297,7 +297,8 @@ export class SalesReturnService extends BaseService {
         },
       );
 
-      const recordedTotalAmount = recordedSubTotalAmount - totalDiscountAmount;
+      const recordedTotalAmount =
+        recordedSubTotalAmount.sub(totalDiscountAmount);
 
       return {
         masterItemId: variant.masterItemId,
@@ -319,16 +320,18 @@ export class SalesReturnService extends BaseService {
       await this.validateAndPrepare(data);
     const calculatedItems = this.calculateItems(data.items, variantMap);
 
-    // Calculate header totals
+    // Calculate header totals using Decimal methods
     const recordedSubTotalAmount = calculatedItems.reduce(
-      (sum, item) => sum + item.recordedSubTotalAmount,
-      0,
+      (sum, item) => sum.add(item.recordedSubTotalAmount),
+      new Decimal(0),
     );
     const recordedDiscountAmount = calculatedItems.reduce(
-      (sum, item) => sum + item.recordedDiscountAmount,
-      0,
+      (sum, item) => sum.add(item.recordedDiscountAmount),
+      new Decimal(0),
     );
-    const recordedTotalAmount = recordedSubTotalAmount - recordedDiscountAmount;
+    const recordedTotalAmount = recordedSubTotalAmount.sub(
+      recordedDiscountAmount,
+    );
 
     // Generate return number
     const returnNumber = await this.generateReturnNumber(data.branchId);
@@ -417,16 +420,18 @@ export class SalesReturnService extends BaseService {
       await this.validateAndPrepare(data);
     const calculatedItems = this.calculateItems(data.items, variantMap);
 
-    // Calculate header totals
+    // Calculate header totals using Decimal methods
     const recordedSubTotalAmount = calculatedItems.reduce(
-      (sum, item) => sum + item.recordedSubTotalAmount,
-      0,
+      (sum, item) => sum.add(item.recordedSubTotalAmount),
+      new Decimal(0),
     );
     const recordedDiscountAmount = calculatedItems.reduce(
-      (sum, item) => sum + item.recordedDiscountAmount,
-      0,
+      (sum, item) => sum.add(item.recordedDiscountAmount),
+      new Decimal(0),
     );
-    const recordedTotalAmount = recordedSubTotalAmount - recordedDiscountAmount;
+    const recordedTotalAmount = recordedSubTotalAmount.sub(
+      recordedDiscountAmount,
+    );
 
     // Get old item IDs for stock refresh
     const oldItemIds = existing.transactionSalesReturnItems.map(

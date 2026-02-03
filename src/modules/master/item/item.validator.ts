@@ -1,5 +1,6 @@
 import { ValidationError } from "../../../utils/error";
 import { z } from "zod";
+import { decimalSchema } from "../../../utils/decimal.utils";
 
 // Item Validators
 export const ItemBodySchema = z.object({
@@ -13,7 +14,7 @@ export const ItemBodySchema = z.object({
       z.object({
         unit: z.string().min(1),
         amount: z.number().int().positive(),
-        sellPrice: z.number().int().min(0),
+        sellPrice: decimalSchema,
       }),
     )
     .min(1, "Minimal harus ada 1 variant"),
@@ -37,6 +38,10 @@ export const ItemParamsSchema = z.object({
 export type ItemParamsType = z.infer<typeof ItemParamsSchema>;
 
 export const ItemQuerySchema = z.object({
+  onlyActive: z
+    .string()
+    .optional()
+    .transform((v) => (v?.trim().toLowerCase() === "true" ? true : undefined)),
   idNotIns: z
     .string()
     .optional()
@@ -77,7 +82,7 @@ export type ItemQueryType = z.infer<typeof ItemQuerySchema>;
 export const VariantBodySchema = z.object({
   unit: z.string().min(1),
   amount: z.number().int().positive(),
-  sellPrice: z.number().int().min(0),
+  sellPrice: decimalSchema,
   isBaseUnit: z.boolean(),
 });
 

@@ -1,13 +1,15 @@
 import { z } from "zod";
+import { Decimal } from "@prisma/client/runtime/library";
+import { decimalSchema, percentageSchema } from "../../../utils/decimal.utils";
 
 const SellReturnDiscountSchema = z.object({
-  percentage: z.number().int().min(0).max(100),
+  percentage: percentageSchema, // CHANGED: Int → Decimal
 });
 
 const SellReturnItemSchema = z.object({
   masterItemVariantId: z.number().int().positive(),
-  qty: z.number().int().positive(),
-  sellPrice: z.number().int().min(0),
+  qty: z.number().int().positive(), // QTY stays as number
+  sellPrice: decimalSchema, // CHANGED: Int → Decimal
   discounts: z.array(SellReturnDiscountSchema).optional().default([]),
 });
 
@@ -17,7 +19,7 @@ export const SellReturnBodySchema = z.object({
   dueDate: z.coerce.date(),
   memberCode: z.string().min(1, "Member code wajib diisi untuk transaksi B2B"),
   notes: z.string().optional().default(""),
-  taxPercentage: z.number().int().min(0).max(100).optional().default(0),
+  taxPercentage: percentageSchema.optional().default("0"), // Uses string, transforms to Decimal
   items: z.array(SellReturnItemSchema).min(1, "Minimal harus ada 1 item"),
   originalInvoiceNumber: z
     .string()

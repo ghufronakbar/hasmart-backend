@@ -15,10 +15,11 @@ import {
 } from ".prisma/client";
 import { RefreshBuyPriceService } from "../refresh-buy-price/refresh-buy-price.service";
 import { BranchQueryType } from "src/middleware/use-branch";
+import { Decimal } from "@prisma/client/runtime/library";
 
 interface CalculatedDiscount {
-  percentage: number;
-  recordedAmount: number;
+  percentage: Decimal;
+  recordedAmount: Decimal;
   orderIndex: number;
 }
 
@@ -28,11 +29,11 @@ interface CalculatedItem {
   qty: number;
   recordedConversion: number;
   totalQty: number;
-  purchasePrice: number;
-  recordedSubTotalAmount: number;
-  recordedDiscountAmount: number;
-  recordedTotalAmount: number;
-  recordedAfterTaxAmount: number;
+  purchasePrice: Decimal;
+  recordedSubTotalAmount: Decimal;
+  recordedDiscountAmount: Decimal;
+  recordedTotalAmount: Decimal;
+  recordedAfterTaxAmount: Decimal;
   discounts: CalculatedDiscount[];
 }
 
@@ -287,24 +288,24 @@ export class PurchaseService extends BaseService {
       number,
       { id: number; masterItemId: number; amount: number }
     >,
-    taxPercentage: number,
+    taxPercentage: Decimal,
   ): CalculatedItem[] {
     return items.map((item) => {
       const variant = variantMap.get(item.masterItemVariantId)!;
       const recordedConversion = variant.amount;
       const totalQty = item.qty * recordedConversion;
-      const recordedSubTotalAmount = item.qty * item.purchasePrice;
+      // Decimal: qty * purchasePrice
+      const recordedSubTotalAmount = item.purchasePrice.mul(item.qty);
 
-      // Calculate discounts
+      // Calculate discounts using Decimal methods
       let runningAmount = recordedSubTotalAmount;
-      let totalDiscountAmount = 0;
+      let totalDiscountAmount = new Decimal(0);
       const discounts: CalculatedDiscount[] = (item.discounts || []).map(
         (d, index) => {
-          const discountAmount = Math.floor(
-            (runningAmount * d.percentage) / 100,
-          );
-          totalDiscountAmount += discountAmount;
-          runningAmount -= discountAmount;
+          // discountAmount = runningAmount * (percentage / 100)
+          const discountAmount = runningAmount.mul(d.percentage).div(100);
+          totalDiscountAmount = totalDiscountAmount.add(discountAmount);
+          runningAmount = runningAmount.sub(discountAmount);
           return {
             percentage: d.percentage,
             recordedAmount: discountAmount,
@@ -313,9 +314,12 @@ export class PurchaseService extends BaseService {
         },
       );
 
-      const recordedTotalAmount = recordedSubTotalAmount - totalDiscountAmount;
-      const recordedAfterTaxAmount =
-        recordedTotalAmount + (recordedTotalAmount * taxPercentage) / 100;
+      const recordedTotalAmount =
+        recordedSubTotalAmount.sub(totalDiscountAmount);
+      // afterTax = total + (total * taxPercentage / 100)
+      const recordedAfterTaxAmount = recordedTotalAmount.add(
+        recordedTotalAmount.mul(taxPercentage).div(100),
+      );
 
       return {
         masterItemId: variant.masterItemId,
@@ -341,22 +345,23 @@ export class PurchaseService extends BaseService {
       data.taxPercentage,
     );
 
-    // Calculate header totals
+    // Calculate header totals using Decimal methods
     const recordedSubTotalAmount = calculatedItems.reduce(
-      (sum, item) => sum + item.recordedSubTotalAmount,
-      0,
+      (sum, item) => sum.add(item.recordedSubTotalAmount),
+      new Decimal(0),
     );
     const recordedDiscountAmount = calculatedItems.reduce(
-      (sum, item) => sum + item.recordedDiscountAmount,
-      0,
+      (sum, item) => sum.add(item.recordedDiscountAmount),
+      new Decimal(0),
     );
 
-    // from percentage to amount
-    const recordedTaxAmount =
-      (data.taxPercentage / 100) *
-      (recordedSubTotalAmount - recordedDiscountAmount);
-    const recordedTotalAmount =
-      recordedSubTotalAmount - recordedDiscountAmount + recordedTaxAmount;
+    // from percentage to amount: taxPercentage / 100 * (subTotal - discount)
+    const recordedTaxAmount = data.taxPercentage
+      .div(100)
+      .mul(recordedSubTotalAmount.sub(recordedDiscountAmount));
+    const recordedTotalAmount = recordedSubTotalAmount
+      .sub(recordedDiscountAmount)
+      .add(recordedTaxAmount);
 
     // Create in transaction
     const purchase = await this.prisma.$transaction(async (tx) => {
@@ -451,20 +456,23 @@ export class PurchaseService extends BaseService {
       data.taxPercentage,
     );
 
-    // Calculate header totals
+    // Calculate header totals using Decimal methods
     const recordedSubTotalAmount = calculatedItems.reduce(
-      (sum, item) => sum + item.recordedSubTotalAmount,
-      0,
+      (sum, item) => sum.add(item.recordedSubTotalAmount),
+      new Decimal(0),
     );
     const recordedDiscountAmount = calculatedItems.reduce(
-      (sum, item) => sum + item.recordedDiscountAmount,
-      0,
+      (sum, item) => sum.add(item.recordedDiscountAmount),
+      new Decimal(0),
     );
-    const recordedTaxAmount =
-      (data.taxPercentage / 100) *
-      (recordedSubTotalAmount - recordedDiscountAmount);
-    const recordedTotalAmount =
-      recordedSubTotalAmount - recordedDiscountAmount + recordedTaxAmount;
+
+    // from percentage to amount: taxPercentage / 100 * (subTotal - discount)
+    const recordedTaxAmount = data.taxPercentage
+      .div(100)
+      .mul(recordedSubTotalAmount.sub(recordedDiscountAmount));
+    const recordedTotalAmount = recordedSubTotalAmount
+      .sub(recordedDiscountAmount)
+      .add(recordedTaxAmount);
 
     // Get old item IDs for stock refresh
     const oldItemIds = existing.transactionPurchaseItems.map(

@@ -1,12 +1,13 @@
 import { z } from "zod";
+import { percentageSchema } from "../../../utils/decimal.utils";
 
 const SalesDiscountSchema = z.object({
-  percentage: z.number().int().min(0).max(100),
+  percentage: percentageSchema, // CHANGED: Int → Decimal
 });
 
 const SalesItemSchema = z.object({
   masterItemVariantId: z.number().int().positive(),
-  qty: z.number().int().positive(),
+  qty: z.number().int().positive(), // QTY stays as number
   discounts: z.array(SalesDiscountSchema).optional().default([]),
 });
 

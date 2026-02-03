@@ -1,13 +1,14 @@
 import { z } from "zod";
+import { decimalSchema, percentageSchema } from "../../../utils/decimal.utils";
 
 const PurchaseReturnDiscountSchema = z.object({
-  percentage: z.number().int().min(0).max(100),
+  percentage: percentageSchema, // CHANGED: Int → Decimal
 });
 
 const PurchaseReturnItemSchema = z.object({
   masterItemVariantId: z.number().int().positive(),
-  qty: z.number().int().positive(),
-  purchasePrice: z.number().int().min(0),
+  qty: z.number().int().positive(), // QTY stays as number
+  purchasePrice: decimalSchema, // CHANGED: Int → Decimal
   discounts: z.array(PurchaseReturnDiscountSchema).optional().default([]),
 });
 
@@ -19,7 +20,7 @@ export const PurchaseReturnBodySchema = z.object({
   masterSupplierId: z.number().int().positive(),
   branchId: z.number().int().positive(),
   notes: z.string().optional().default(""),
-  taxPercentage: z.number().int().min(0).max(100).default(0),
+  taxPercentage: percentageSchema, // CHANGED: Int → Decimal
   items: z.array(PurchaseReturnItemSchema).min(1, "Minimal harus ada 1 item"),
 });
 

@@ -2,6 +2,7 @@ import { BaseService } from "../../../base/base-service";
 import { PrismaService } from "../../common/prisma/prisma.service";
 import {
   ItemBodyType,
+  ItemQueryType,
   ItemUpdateBodyType,
   VariantBodyType,
 } from "./item.validator";
@@ -53,13 +54,13 @@ export class ItemService extends BaseService {
 
   private constructWhere(
     filter?: FilterQueryType,
-    idNotIns?: number[],
+    itemQuery?: ItemQueryType,
   ): Prisma.MasterItemWhereInput {
     const where: Prisma.MasterItemWhereInput = {
       deletedAt: null,
       id:
-        Array.isArray(idNotIns) && idNotIns.length > 0
-          ? { notIn: idNotIns }
+        Array.isArray(itemQuery?.idNotIns) && itemQuery.idNotIns.length > 0
+          ? { notIn: itemQuery.idNotIns }
           : undefined,
       OR: filter?.search
         ? [
@@ -68,15 +69,18 @@ export class ItemService extends BaseService {
           ]
         : undefined,
     };
+    if (itemQuery?.onlyActive === true) {
+      where.isActive = true;
+    }
     return where;
   }
 
   private constructArgs(
     filter?: FilterQueryType,
-    idNotIns?: number[],
+    itemQuery?: ItemQueryType,
   ): Prisma.MasterItemFindManyArgs {
     const args: Prisma.MasterItemFindManyArgs = {
-      where: this.constructWhere(filter, idNotIns),
+      where: this.constructWhere(filter, itemQuery),
       skip: filter?.skip,
       take: filter?.limit,
       orderBy: filter?.sortBy
@@ -130,7 +134,7 @@ export class ItemService extends BaseService {
       masterItemCategoryId: item.masterItemCategoryId,
       masterSupplierId: item.masterSupplierId,
       isActive: item.isActive,
-      recordedBuyPrice: item.recordedBuyPrice,
+      recordedBuyPrice: item.recordedBuyPrice.toFixed(2),
       stock,
       masterItemCategory: item.masterItemCategory,
       masterSupplier: item.masterSupplier,
@@ -138,10 +142,10 @@ export class ItemService extends BaseService {
         id: v.id,
         unit: v.unit,
         amount: v.amount,
-        recordedBuyPrice: v.recordedBuyPrice,
-        recordedProfitPercentage: v.recordedProfitPercentage,
-        recordedProfitAmount: v.recordedProfitAmount,
-        sellPrice: v.sellPrice,
+        recordedBuyPrice: v.recordedBuyPrice.toFixed(2),
+        recordedProfitPercentage: v.recordedProfitPercentage.toFixed(2),
+        recordedProfitAmount: v.recordedProfitAmount.toFixed(2),
+        sellPrice: v.sellPrice.toFixed(2),
         isBaseUnit: v.isBaseUnit,
         createdAt: v.createdAt,
         updatedAt: v.updatedAt,
@@ -154,12 +158,12 @@ export class ItemService extends BaseService {
   getAllItems = async (
     filter?: FilterQueryType,
     branchQuery?: BranchQueryType,
-    idNotIns?: number[],
+    itemQuery?: ItemQueryType,
   ) => {
     const [rows, count] = await Promise.all([
-      this.prisma.masterItem.findMany(this.constructArgs(filter, idNotIns)),
+      this.prisma.masterItem.findMany(this.constructArgs(filter, itemQuery)),
       this.prisma.masterItem.count({
-        where: this.constructWhere(filter, idNotIns),
+        where: this.constructWhere(filter, itemQuery),
       }),
     ]);
 

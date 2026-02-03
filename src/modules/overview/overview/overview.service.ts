@@ -1,6 +1,7 @@
 import { BaseService } from "../../../base/base-service";
 import { PrismaService } from "../../common/prisma/prisma.service";
 import { FilterQueryType } from "src/middleware/use-filter";
+import { Decimal } from "@prisma/client/runtime/library";
 
 interface FinancialSummary {
   grossSales: number;
@@ -130,23 +131,33 @@ export class OverviewService extends BaseService {
       this.prisma.transactionSell.count({ where: dateFilter }),
     ]);
 
-    const grossSales =
-      (salesSum._sum.recordedTotalAmount || 0) +
-      (sellSum._sum.recordedTotalAmount || 0);
-    const totalReturns =
-      (salesReturnSum._sum.recordedTotalAmount || 0) +
-      (sellReturnSum._sum.recordedTotalAmount || 0);
-    const netSales = grossSales - totalReturns;
-    const netPurchase =
-      (purchaseSum._sum.recordedTotalAmount || 0) -
-      (purchaseReturnSum._sum.recordedTotalAmount || 0);
+    // Prisma aggregate returns Decimal; use Decimal methods then convert to number
+    const salesTotal = new Decimal(salesSum._sum.recordedTotalAmount || 0);
+    const sellTotal = new Decimal(sellSum._sum.recordedTotalAmount || 0);
+    const salesReturnTotal = new Decimal(
+      salesReturnSum._sum.recordedTotalAmount || 0,
+    );
+    const sellReturnTotal = new Decimal(
+      sellReturnSum._sum.recordedTotalAmount || 0,
+    );
+    const purchaseTotal = new Decimal(
+      purchaseSum._sum.recordedTotalAmount || 0,
+    );
+    const purchaseReturnTotal = new Decimal(
+      purchaseReturnSum._sum.recordedTotalAmount || 0,
+    );
+
+    const grossSales = salesTotal.add(sellTotal);
+    const totalReturns = salesReturnTotal.add(sellReturnTotal);
+    const netSales = grossSales.sub(totalReturns);
+    const netPurchase = purchaseTotal.sub(purchaseReturnTotal);
     const transactionCount = salesCount + sellCount;
 
     return {
-      grossSales,
-      totalReturns,
-      netSales,
-      netPurchase,
+      grossSales: grossSales.toNumber(),
+      totalReturns: totalReturns.toNumber(),
+      netSales: netSales.toNumber(),
+      netPurchase: netPurchase.toNumber(),
       transactionCount,
     };
   };
@@ -184,7 +195,9 @@ export class OverviewService extends BaseService {
     [...salesData, ...sellData].forEach((item) => {
       const dateKey = formatDate(new Date(item.transactionDate));
       const current = dailyMap.get(dateKey) || 0;
-      dailyMap.set(dateKey, current + item.recordedTotalAmount);
+      // Convert Decimal to number for aggregation
+      const amount = new Decimal(item.recordedTotalAmount).toNumber();
+      dailyMap.set(dateKey, current + amount);
     });
 
     // Convert to array and sort by date
@@ -233,9 +246,11 @@ export class OverviewService extends BaseService {
         soldQty: 0,
         revenue: 0,
       };
+      // Convert Decimal to number for aggregation
+      const amount = new Decimal(item.recordedTotalAmount).toNumber();
       itemMap.set(item.masterItemId, {
         soldQty: existing.soldQty + item.totalQty,
-        revenue: existing.revenue + item.recordedTotalAmount,
+        revenue: existing.revenue + amount,
       });
     });
 

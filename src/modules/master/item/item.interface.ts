@@ -26,14 +26,15 @@ export interface MasterItemWithIncludes extends MasterItem {
 }
 
 // Response interfaces for consistent API responses
+// NOTE: Financial fields are strings to preserve Decimal precision
 export interface ItemVariantResponse {
   id: number;
   unit: string;
-  amount: number;
-  recordedBuyPrice: number;
-  recordedProfitPercentage: number;
-  recordedProfitAmount: number;
-  sellPrice: number;
+  amount: number; // conversion amount, stays as number
+  recordedBuyPrice: string; // CHANGED: Decimal → string
+  recordedProfitPercentage: string; // CHANGED: Decimal → string
+  recordedProfitAmount: string; // CHANGED: Decimal → string
+  sellPrice: string; // CHANGED: Decimal → string
   isBaseUnit: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -46,7 +47,7 @@ export interface ItemResponse {
   masterItemCategoryId: number;
   masterSupplierId: number;
   isActive: boolean;
-  recordedBuyPrice: number;
+  recordedBuyPrice: string; // CHANGED: Decimal → string
   stock: number;
   masterItemCategory: CategorySelect;
   masterSupplier: SupplierSelect;
@@ -62,7 +63,7 @@ export interface ItemListResponse {
   masterItemCategoryId: number;
   masterSupplierId: number;
   isActive: boolean;
-  recordedBuyPrice: number;
+  recordedBuyPrice: string; // CHANGED: Decimal → string
   stock: number;
   masterItemCategory: CategorySelect;
   masterSupplier: SupplierSelect;

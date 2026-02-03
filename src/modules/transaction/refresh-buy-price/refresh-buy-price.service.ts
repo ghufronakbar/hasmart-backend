@@ -1,5 +1,6 @@
 import { BaseService } from "../../../base/base-service";
 import { PrismaService } from "../../common/prisma/prisma.service";
+import { Decimal } from "@prisma/client/runtime/library";
 
 export class RefreshBuyPriceService extends BaseService {
   constructor(private readonly prisma: PrismaService) {
@@ -59,19 +60,21 @@ export class RefreshBuyPriceService extends BaseService {
     console.log("returnAgg", returnAgg);
     console.log("variants", variants);
 
-    // 2. Hitung Average Buy Price (Base Unit)
-    const totalQty =
-      (purchaseAgg._sum.totalQty ?? 0) - (returnAgg._sum.totalQty ?? 0);
-    const totalAmount =
-      (purchaseAgg._sum.recordedAfterTaxAmount ?? 0) -
-      (returnAgg._sum.recordedTotalAmount ?? 0);
+    // 2. Hitung Average Buy Price (Base Unit) using Decimal methods
+    const purchaseQty = purchaseAgg._sum.totalQty ?? 0;
+    const returnQty = returnAgg._sum.totalQty ?? 0;
+    const totalQty = purchaseQty - returnQty;
 
-    let avgBuyPriceBaseUnit = 0;
+    // Use Decimal for financial calculations
+    const purchaseAmount =
+      purchaseAgg._sum.recordedAfterTaxAmount ?? new Decimal(0);
+    const returnAmount = returnAgg._sum.recordedTotalAmount ?? new Decimal(0);
+    const totalAmount = purchaseAmount.sub(returnAmount);
+
+    let avgBuyPriceBaseUnit = new Decimal(0);
     if (totalQty > 0) {
-      avgBuyPriceBaseUnit = totalAmount / totalQty;
+      avgBuyPriceBaseUnit = totalAmount.div(totalQty);
     }
-
-    const finalBuyPriceInt = Math.round(avgBuyPriceBaseUnit);
 
     // 3. Lakukan Update secara ATOMIC & PARALEL
     await this.prisma.$transaction(async (tx) => {
@@ -81,23 +84,24 @@ export class RefreshBuyPriceService extends BaseService {
       const updateMasterPromise = tx.masterItem.update({
         where: { id: masterItemId },
         data: {
-          recordedBuyPrice: finalBuyPriceInt,
+          recordedBuyPrice: avgBuyPriceBaseUnit,
         },
       });
       updatePromises.push(updateMasterPromise);
 
       // B. Push Promise Update Semua Variant
       for (const variant of variants) {
-        // Hitung Modal per Varian (Base Price * Konversi)
-        const variantCostPrice = finalBuyPriceInt * variant.amount;
+        // Hitung Modal per Varian (Base Price * Konversi) using Decimal.mul()
+        const variantCostPrice = avgBuyPriceBaseUnit.mul(variant.amount);
 
-        // Hitung Profit
-        const profitAmount = variant.sellPrice - variantCostPrice;
-        let profitPercentage = 0;
+        // Hitung Profit using Decimal.sub()
+        const profitAmount = variant.sellPrice.sub(variantCostPrice);
+        let profitPercentage = new Decimal(0);
 
         // Hindari division by zero saat hitung persen
-        if (variantCostPrice > 0) {
-          profitPercentage = (profitAmount / variantCostPrice) * 100;
+        if (variantCostPrice.gt(0)) {
+          // (profitAmount / variantCostPrice) * 100
+          profitPercentage = profitAmount.div(variantCostPrice).mul(100);
         }
 
         // Push ke array (JANGAN di-await disini)
@@ -105,8 +109,8 @@ export class RefreshBuyPriceService extends BaseService {
           where: { id: variant.id },
           data: {
             recordedBuyPrice: variantCostPrice,
-            recordedProfitAmount: Math.round(profitAmount),
-            recordedProfitPercentage: Math.round(profitPercentage),
+            recordedProfitAmount: profitAmount,
+            recordedProfitPercentage: profitPercentage,
           },
         });
 

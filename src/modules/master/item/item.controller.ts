@@ -23,7 +23,7 @@ export class ItemController extends BaseController {
     const { rows, pagination } = await this.service.getAllItems(
       filter,
       branchQuery,
-      itemQuery.idNotIns,
+      itemQuery,
     );
     return this.sendList(req, res, rows, pagination, filter);
   };

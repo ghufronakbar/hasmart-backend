@@ -103,7 +103,7 @@ model MasterItem {
   isActive Boolean @map("is_active")
 
   // global (recorded from transaction) //average
-  recordedBuyPrice Decimal @map("recorded_buy_price") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL
+  recordedBuyPrice Int @map("recorded_buy_price")
 
   // mapping item per cabang (ex: kebutuhan stok)
   itemBranches ItemBranch[]
@@ -163,8 +163,8 @@ model MasterItemVariant {
   unit   String @map("unit") // PCS, PACK, BOX
   amount Int    @map("amount") // Konversi ke base unit. Base = 1
 
-  recordedBuyPrice Decimal @map("recorded_buy_price") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // harga beli yang di record dari transaksi
-  sellPrice        Decimal @map("sell_price") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // karena harga per pcs dan pack beda
+  recordedBuyPrice Int @map("recorded_buy_price") // harga beli yang di record dari transaksi
+  sellPrice        Int @map("sell_price") // karena harga per pcs dan pack beda
 
   masterItemId Int        @map("master_item_id")
   masterItem   MasterItem @relation(fields: [masterItemId], references: [id])
@@ -172,8 +172,8 @@ model MasterItemVariant {
   isBaseUnit Boolean @map("is_base_unit") // apakah ini unit dasar (biasanya PCS, intinya amount=1)
 
   // recorded (from transaction)
-  recordedProfitPercentage Decimal @map("recorded_profit_percentage") @db.Decimal(5, 2) // CHANGED_INT_TO_DECIMAL
-  recordedProfitAmount     Decimal @map("recorded_profit_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL
+  recordedProfitPercentage Int @map("recorded_profit_percentage")
+  recordedProfitAmount     Int @map("recorded_profit_amount")
 
   // track purchase & returns
   transactionPurchaseItems       TransactionPurchaseItem[]
@@ -299,11 +299,11 @@ model TransactionPurchase {
   notes           String   @default("") @map("notes") @db.Text()
 
   // recorded
-  recordedSubTotalAmount Decimal @map("recorded_sub_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari amount setiap item
-  recordedDiscountAmount Decimal @map("recorded_discount_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari setiap item discount
-  recordedTaxPercentage  Decimal @map("recorded_tax_percentage") @db.Decimal(5, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari tax
-  recordedTaxAmount      Decimal @map("recorded_tax_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari tax
-  recordedTotalAmount    Decimal @map("recorded_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize hasil akhir
+  recordedSubTotalAmount Int @map("recorded_sub_total_amount") // denormalize dari amount setiap item
+  recordedDiscountAmount Int @map("recorded_discount_amount") // denormalize dari setiap item discount
+  recordedTaxPercentage  Int @map("recorded_tax_percentage") // denormalize dari tax
+  recordedTaxAmount      Int @map("recorded_tax_amount") // denormalize dari tax
+  recordedTotalAmount    Int @map("recorded_total_amount") // denormalize hasil akhir
 
   masterSupplierId Int            @map("master_supplier_id")
   masterSupplier   MasterSupplier @relation(fields: [masterSupplierId], references: [id])
@@ -339,12 +339,12 @@ model TransactionPurchaseItem {
   recordedConversion Int @map("recorded_conversion") // 1 Pack isi berapa saat beli ini? (disimpan statis jaga2 kalau master berubah)
   totalQty           Int @map("total_qty") // total qty (qty * recordedConversion)
 
-  recordedSubTotalAmount Decimal @map("recorded_sub_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari variantAmount * amount
-  recordedDiscountAmount Decimal @map("recorded_discount_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari setiap item discount
-  recordedTotalAmount    Decimal @map("recorded_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari amount setiap item
-  recordedAfterTaxAmount Decimal @map("recorded_after_tax_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari amount setiap item
+  recordedSubTotalAmount Int @map("recorded_sub_total_amount") // denormalize dari variantAmount * amount
+  recordedDiscountAmount Int @map("recorded_discount_amount") // denormalize dari setiap item discount
+  recordedTotalAmount    Int @map("recorded_total_amount") // denormalize dari amount setiap item
+  recordedAfterTaxAmount Int @map("recorded_after_tax_amount") // denormalize dari amount setiap item
 
-  purchasePrice Decimal @map("purchase_price") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // harga beli per 1 barang variant
+  purchasePrice Int @map("purchase_price") // harga beli per 1 barang variant
 
   // relation
   // setiap item ada diskon masing masing
@@ -365,8 +365,8 @@ model TransactionPurchaseDiscount {
   transactionPurchaseItemId Int                     @map("transaction_purchase_item_id")
   transactionPurchaseItem   TransactionPurchaseItem @relation(fields: [transactionPurchaseItemId], references: [id])
 
-  percentage     Decimal @map("percentage") @db.Decimal(5, 2) // CHANGED_INT_TO_DECIMAL
-  recordedAmount Decimal @map("recorded_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL
+  percentage     Int @map("percentage")
+  recordedAmount Int @map("recorded_amount")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
@@ -389,11 +389,11 @@ model TransactionPurchaseReturn {
   notes           String   @default("") @map("notes") @db.Text()
 
   // recorded
-  recordedSubTotalAmount Decimal @map("recorded_sub_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari amount setiap item
-  recordedDiscountAmount Decimal @map("recorded_discount_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari setiap item discount
-  recordedTaxAmount      Decimal @map("recorded_tax_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari tax
-  recordedTaxPercentage  Decimal @map("recorded_tax_percentage") @db.Decimal(5, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari tax
-  recordedTotalAmount    Decimal @map("recorded_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize hasil akhir (anggapnya ini hasil akhir uang yang masuk kembali ke perusahaan)
+  recordedSubTotalAmount Int @map("recorded_sub_total_amount") // denormalize dari amount setiap item
+  recordedDiscountAmount Int @map("recorded_discount_amount") // denormalize dari setiap item discount
+  recordedTaxAmount      Int @map("recorded_tax_amount") // denormalize dari tax
+  recordedTaxPercentage  Int @map("recorded_tax_percentage") // denormalize dari tax
+  recordedTotalAmount    Int @map("recorded_total_amount") // denormalize hasil akhir (anggapnya ini hasil akhir uang yang masuk kembali ke perusahaan)
 
   masterSupplierId Int            @map("master_supplier_id")
   masterSupplier   MasterSupplier @relation(fields: [masterSupplierId], references: [id])
@@ -428,11 +428,11 @@ model TransactionPurchaseReturnItem {
   recordedConversion Int @map("recorded_conversion") // 1 Pack isi berapa saat beli ini? (disimpan statis jaga2 kalau master berubah)
   totalQty           Int @map("total_qty") // total qty (qty * recordedConversion)
 
-  recordedSubTotalAmount Decimal @map("recorded_sub_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari variantAmount * amount
-  recordedDiscountAmount Decimal @map("recorded_discount_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari setiap item discount
-  recordedTotalAmount    Decimal @map("recorded_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari amount setiap item
+  recordedSubTotalAmount Int @map("recorded_sub_total_amount") // denormalize dari variantAmount * amount
+  recordedDiscountAmount Int @map("recorded_discount_amount") // denormalize dari setiap item discount
+  recordedTotalAmount    Int @map("recorded_total_amount") // denormalize dari amount setiap item
 
-  purchasePrice Decimal @map("purchase_price") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // harga beli per 1 barang variant
+  purchasePrice Int @map("purchase_price") // harga beli per 1 barang variant
 
   // relation
   // setiap item ada diskon masing masing
@@ -453,8 +453,8 @@ model TransactionPurchaseReturnDiscount {
   transactionPurchaseReturnItemId Int                           @map("transaction_purchase_return_item_id")
   transactionPurchaseReturnItem   TransactionPurchaseReturnItem @relation(fields: [transactionPurchaseReturnItemId], references: [id])
 
-  percentage     Decimal @map("percentage") @db.Decimal(5, 2) // CHANGED_INT_TO_DECIMAL
-  recordedAmount Decimal @map("recorded_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL
+  percentage     Int @map("percentage")
+  recordedAmount Int @map("recorded_amount")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
@@ -473,9 +473,9 @@ model TransactionSales {
   notes         String @default("") @map("notes") @db.Text()
 
   // recorded
-  recordedSubTotalAmount Decimal @map("recorded_sub_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari amount setiap item
-  recordedDiscountAmount Decimal @map("recorded_discount_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari setiap item discount
-  recordedTotalAmount    Decimal @map("recorded_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize hasil akhir
+  recordedSubTotalAmount Int @map("recorded_sub_total_amount") // denormalize dari amount setiap item
+  recordedDiscountAmount Int @map("recorded_discount_amount") // denormalize dari setiap item discount
+  recordedTotalAmount    Int @map("recorded_total_amount") // denormalize hasil akhir
 
   masterMemberId Int?          @map("master_member_id")
   masterMember   MasterMember? @relation(fields: [masterMemberId], references: [id])
@@ -514,11 +514,11 @@ model TransactionSalesItem {
   recordedConversion Int @map("recorded_conversion") // 1 Pack isi berapa saat beli ini? (disimpan statis jaga2 kalau master berubah)
   totalQty           Int @map("total_qty") // total qty (qty * recordedConversion)
 
-  recordedSubTotalAmount Decimal @map("recorded_sub_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari variantAmount * amount
-  recordedDiscountAmount Decimal @map("recorded_discount_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari setiap item discount
-  recordedTotalAmount    Decimal @map("recorded_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari amount setiap item
+  recordedSubTotalAmount Int @map("recorded_sub_total_amount") // denormalize dari variantAmount * amount
+  recordedDiscountAmount Int @map("recorded_discount_amount") // denormalize dari setiap item discount
+  recordedTotalAmount    Int @map("recorded_total_amount") // denormalize dari amount setiap item
 
-  salesPrice Decimal @map("sales_price") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // harga jual per 1 barang variant
+  salesPrice Int @map("sales_price") // harga jual per 1 barang variant
 
   transactionSalesDiscounts TransactionSalesDiscount[]
 
@@ -537,8 +537,8 @@ model TransactionSalesDiscount {
   transactionSalesItemId Int                  @map("transaction_sales_item_id")
   transactionSalesItem   TransactionSalesItem @relation(fields: [transactionSalesItemId], references: [id])
 
-  percentage     Decimal @map("percentage") @db.Decimal(5, 2) // CHANGED_INT_TO_DECIMAL
-  recordedAmount Decimal @map("recorded_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL
+  percentage     Int @map("percentage")
+  recordedAmount Int @map("recorded_amount")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
@@ -562,9 +562,9 @@ model TransactionSalesReturn {
   notes              String           @default("") @map("notes") @db.Text()
 
   // recorded
-  recordedSubTotalAmount Decimal @map("recorded_sub_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari amount setiap item
-  recordedDiscountAmount Decimal @map("recorded_discount_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari setiap item discount
-  recordedTotalAmount    Decimal @map("recorded_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize hasil akhir
+  recordedSubTotalAmount Int @map("recorded_sub_total_amount") // denormalize dari amount setiap item
+  recordedDiscountAmount Int @map("recorded_discount_amount") // denormalize dari setiap item discount
+  recordedTotalAmount    Int @map("recorded_total_amount") // denormalize hasil akhir
 
   masterMemberId Int?          @map("master_member_id")
   masterMember   MasterMember? @relation(fields: [masterMemberId], references: [id])
@@ -601,11 +601,11 @@ model TransactionSalesReturnItem {
   recordedConversion Int @map("recorded_conversion") // 1 Pack isi berapa saat beli ini? (disimpan statis jaga2 kalau master berubah)
   totalQty           Int @map("total_qty") // total qty (qty * recordedConversion)
 
-  recordedSubTotalAmount Decimal @map("recorded_sub_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari variantAmount * amount
-  recordedDiscountAmount Decimal @map("recorded_discount_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari setiap item discount
-  recordedTotalAmount    Decimal @map("recorded_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari amount setiap item
+  recordedSubTotalAmount Int @map("recorded_sub_total_amount") // denormalize dari variantAmount * amount
+  recordedDiscountAmount Int @map("recorded_discount_amount") // denormalize dari setiap item discount
+  recordedTotalAmount    Int @map("recorded_total_amount") // denormalize dari amount setiap item
 
-  salesPrice Decimal @map("sales_price") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // harga jual per 1 barang variant
+  salesPrice Int @map("sales_price") // harga jual per 1 barang variant
 
   transactionSalesReturnDiscounts TransactionSalesReturnDiscount[]
 
@@ -624,8 +624,8 @@ model TransactionSalesReturnDiscount {
   transactionSalesReturnItemId Int                        @map("transaction_sales_return_item_id")
   transactionSalesReturnItem   TransactionSalesReturnItem @relation(fields: [transactionSalesReturnItemId], references: [id])
 
-  percentage     Decimal @map("percentage") @db.Decimal(5, 2) // CHANGED_INT_TO_DECIMAL
-  recordedAmount Decimal @map("recorded_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL
+  percentage     Int @map("percentage")
+  recordedAmount Int @map("recorded_amount")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
@@ -647,11 +647,11 @@ model TransactionSell {
   notes           String   @default("") @map("notes") @db.Text()
 
   // recorded
-  recordedSubTotalAmount Decimal @map("recorded_sub_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL
-  recordedDiscountAmount Decimal @map("recorded_discount_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL
-  recordedTaxAmount      Decimal @map("recorded_tax_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // Biasanya B2B ada pajak terpisah
-  recordedTaxPercentage  Decimal @map("recorded_tax_percentage") @db.Decimal(5, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari tax
-  recordedTotalAmount    Decimal @map("recorded_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL
+  recordedSubTotalAmount Int @map("recorded_sub_total_amount")
+  recordedDiscountAmount Int @map("recorded_discount_amount")
+  recordedTaxAmount      Int @map("recorded_tax_amount") // Biasanya B2B ada pajak terpisah
+  recordedTaxPercentage  Int @map("recorded_tax_percentage") // denormalize dari tax
+  recordedTotalAmount    Int @map("recorded_total_amount")
 
   masterMemberId Int          @map("master_member_id") // Customer B2B wajib terdaftar
   masterMember   MasterMember @relation(fields: [masterMemberId], references: [id])
@@ -686,11 +686,11 @@ model TransactionSellItem {
   recordedConversion Int @map("recorded_conversion")
   totalQty           Int @map("total_qty") // qty * recordedConversion
 
-  recordedSubTotalAmount Decimal @map("recorded_sub_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL
-  recordedDiscountAmount Decimal @map("recorded_discount_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL
-  recordedTotalAmount    Decimal @map("recorded_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL
+  recordedSubTotalAmount Int @map("recorded_sub_total_amount")
+  recordedDiscountAmount Int @map("recorded_discount_amount")
+  recordedTotalAmount    Int @map("recorded_total_amount")
 
-  sellPrice Decimal @map("sell_price") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL
+  sellPrice Int @map("sell_price")
 
   transactionSellDiscounts TransactionSellDiscount[]
 
@@ -709,8 +709,8 @@ model TransactionSellDiscount {
   transactionSellItemId Int                 @map("transaction_sell_item_id")
   transactionSellItem   TransactionSellItem @relation(fields: [transactionSellItemId], references: [id])
 
-  percentage     Decimal @map("percentage") @db.Decimal(5, 2) // CHANGED_INT_TO_DECIMAL
-  recordedAmount Decimal @map("recorded_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL
+  percentage     Int @map("percentage")
+  recordedAmount Int @map("recorded_amount")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
@@ -735,12 +735,12 @@ model TransactionSellReturn {
   notes           String   @default("") @map("notes") @db.Text()
 
   // recorded
-  recordedSubTotalAmount Decimal @map("recorded_sub_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL
-  recordedDiscountAmount Decimal @map("recorded_discount_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL
-  recordedTaxAmount      Decimal @map("recorded_tax_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL
-  recordedTaxPercentage  Decimal @map("recorded_tax_percentage") @db.Decimal(5, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari tax
+  recordedSubTotalAmount Int @map("recorded_sub_total_amount")
+  recordedDiscountAmount Int @map("recorded_discount_amount")
+  recordedTaxAmount      Int @map("recorded_tax_amount")
+  recordedTaxPercentage  Int @map("recorded_tax_percentage") // denormalize dari tax
 
-  recordedTotalAmount Decimal @map("recorded_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL
+  recordedTotalAmount Int @map("recorded_total_amount")
 
   masterMemberId Int          @map("master_member_id")
   masterMember   MasterMember @relation(fields: [masterMemberId], references: [id])
@@ -774,11 +774,11 @@ model TransactionSellReturnItem {
   recordedConversion Int @map("recorded_conversion")
   totalQty           Int @map("total_qty")
 
-  recordedSubTotalAmount Decimal @map("recorded_sub_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL
-  recordedDiscountAmount Decimal @map("recorded_discount_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL
-  recordedTotalAmount    Decimal @map("recorded_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL
+  recordedSubTotalAmount Int @map("recorded_sub_total_amount")
+  recordedDiscountAmount Int @map("recorded_discount_amount")
+  recordedTotalAmount    Int @map("recorded_total_amount")
 
-  sellPrice Decimal @map("sell_price") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL
+  sellPrice Int @map("sell_price")
 
   transactionSellReturnDiscounts TransactionSellReturnDiscount[]
 
@@ -797,8 +797,8 @@ model TransactionSellReturnDiscount {
   transactionSellReturnItemId Int                       @map("transaction_sell_return_item_id")
   transactionSellReturnItem   TransactionSellReturnItem @relation(fields: [transactionSellReturnItemId], references: [id])
 
-  percentage     Decimal @map("percentage") @db.Decimal(5, 2) // CHANGED_INT_TO_DECIMAL
-  recordedAmount Decimal @map("recorded_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL
+  percentage     Int @map("percentage")
+  recordedAmount Int @map("recorded_amount")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
