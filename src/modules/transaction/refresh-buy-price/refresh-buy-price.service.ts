@@ -8,27 +8,54 @@ export class RefreshBuyPriceService extends BaseService {
   }
 
   /**
-   * Menghitung ulang harga beli (Average Cost) dari nol
-   * Mengupdate MasterItem.recordedBuyPrice (Base Unit)
-   * Mengupdate semua Variant (Profit & Percentage)
+   * Menghitung ulang harga beli (Average Cost)
+   * Logika: Menggunakan "Weighted Average" (Rata-rata Tertimbang).
+   * Jika ada Override Harga, maka perhitungan dimulai dari titik override tersebut.
    */
   refreshBuyPrice = async (masterItemId: number) => {
-    // 1. Jalankan kalkulasi berat di Database (Aggregate)
+    // 1. Cek apakah ada Override Harga terakhir?
+    const lastOverride = await this.prisma.itemBuyPriceOverride.findFirst({
+      where: { masterItemId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Tentukan Cut-off Date (Jika tidak ada, ambil dari awal jaman)
+    const startDate = lastOverride ? lastOverride.createdAt : new Date(0);
+
+    // 2. Siapkan Nilai Awal (Initial State)
+    let initialQty = 0;
+    let initialAmount = new Decimal(0);
+
+    if (lastOverride) {
+      // Jika ada override, stok saat itu dianggap sebagai "Pembelian Baru"
+      // dengan harga yang ditentukan user.
+      initialQty = lastOverride.snapshotStock;
+
+      // Total Uang = Stok Snapshot * Harga Override
+      initialAmount = lastOverride.newBuyPrice.mul(lastOverride.snapshotStock);
+    }
+
+    // 3. Agregasi Transaksi SETELAH tanggal Override
     const [purchaseAgg, returnAgg, variants] = await Promise.all([
-      // Sum Total Beli
+      // A. Sum Pembelian (Setelah Override)
       this.prisma.transactionPurchaseItem.aggregate({
         _sum: {
           totalQty: true,
-          recordedAfterTaxAmount: true,
+          // Menggunakan recordedTotalAmount karena ini nilai finansial final
+          recordedTotalAmount: true,
         },
         where: {
           masterItemId: masterItemId,
           deletedAt: null,
-          transactionPurchase: { deletedAt: null },
+          transactionPurchase: {
+            deletedAt: null,
+            // [CRITICAL] Hanya ambil transaksi SETELAH override dibuat
+            transactionDate: { gt: startDate },
+          },
         },
       }),
 
-      // Sum Total Retur Beli
+      // B. Sum Retur Pembelian (Setelah Override)
       this.prisma.transactionPurchaseReturnItem.aggregate({
         _sum: {
           totalQty: true,
@@ -37,11 +64,14 @@ export class RefreshBuyPriceService extends BaseService {
         where: {
           masterItemId: masterItemId,
           deletedAt: null,
-          transactionPurchaseReturn: { deletedAt: null },
+          transactionPurchaseReturn: {
+            deletedAt: null,
+            transactionDate: { gt: startDate },
+          },
         },
       }),
 
-      // Ambil SEMUA variant
+      // C. Ambil semua variant untuk update profit
       this.prisma.masterItemVariant.findMany({
         where: {
           masterItemId: masterItemId,
@@ -56,31 +86,41 @@ export class RefreshBuyPriceService extends BaseService {
       }),
     ]);
 
-    console.log("purchaseAgg", purchaseAgg);
-    console.log("returnAgg", returnAgg);
-    console.log("variants", variants);
-
-    // 2. Hitung Average Buy Price (Base Unit) using Decimal methods
+    // 4. Hitung Total Gabungan (Initial + Delta Transactions)
     const purchaseQty = purchaseAgg._sum.totalQty ?? 0;
     const returnQty = returnAgg._sum.totalQty ?? 0;
-    const totalQty = purchaseQty - returnQty;
 
-    // Use Decimal for financial calculations
+    // Decimal calculations
     const purchaseAmount =
-      purchaseAgg._sum.recordedAfterTaxAmount ?? new Decimal(0);
+      purchaseAgg._sum.recordedTotalAmount ?? new Decimal(0);
     const returnAmount = returnAgg._sum.recordedTotalAmount ?? new Decimal(0);
-    const totalAmount = purchaseAmount.sub(returnAmount);
 
+    // Rumus: Qty Akhir = Awal + Beli - Retur
+    const finalTotalQty = initialQty + purchaseQty - returnQty;
+
+    // Rumus: Uang Akhir = Awal + Beli - Retur
+    const finalTotalAmount = initialAmount
+      .add(purchaseAmount)
+      .sub(returnAmount);
+
+    // 5. Hitung Average Price (Base Unit)
     let avgBuyPriceBaseUnit = new Decimal(0);
-    if (totalQty > 0) {
-      avgBuyPriceBaseUnit = totalAmount.div(totalQty);
+
+    // Hindari division by zero
+    if (finalTotalQty > 0) {
+      avgBuyPriceBaseUnit = finalTotalAmount.div(finalTotalQty);
+    }
+    // Edge case: Jika stok 0 atau minus, bisa diset 0 atau pertahankan harga lama.
+    // Di sini kita set 0 atau harga override terakhir jika quantity habis tapi history ada.
+    else if (lastOverride) {
+      avgBuyPriceBaseUnit = lastOverride.newBuyPrice;
     }
 
-    // 3. Lakukan Update secara ATOMIC & PARALEL
+    // 6. Lakukan Update secara ATOMIC & PARALEL
     await this.prisma.$transaction(async (tx) => {
       const updatePromises: Promise<unknown>[] = [];
 
-      // A. Push Promise Update Master Item (Base Price)
+      // A. Update Master Item (Base Price)
       const updateMasterPromise = tx.masterItem.update({
         where: { id: masterItemId },
         data: {
@@ -89,22 +129,21 @@ export class RefreshBuyPriceService extends BaseService {
       });
       updatePromises.push(updateMasterPromise);
 
-      // B. Push Promise Update Semua Variant
+      // B. Update Semua Variant (Profit Analysis)
       for (const variant of variants) {
-        // Hitung Modal per Varian (Base Price * Konversi) using Decimal.mul()
+        // HPP Varian = Harga Rata-rata Base * Konversi
         const variantCostPrice = avgBuyPriceBaseUnit.mul(variant.amount);
 
-        // Hitung Profit using Decimal.sub()
+        // Profit = Jual - HPP
         const profitAmount = variant.sellPrice.sub(variantCostPrice);
         let profitPercentage = new Decimal(0);
 
-        // Hindari division by zero saat hitung persen
+        // Hindari division by zero
         if (variantCostPrice.gt(0)) {
           // (profitAmount / variantCostPrice) * 100
           profitPercentage = profitAmount.div(variantCostPrice).mul(100);
         }
 
-        // Push ke array (JANGAN di-await disini)
         const updateVariantPromise = tx.masterItemVariant.update({
           where: { id: variant.id },
           data: {
@@ -117,8 +156,6 @@ export class RefreshBuyPriceService extends BaseService {
         updatePromises.push(updateVariantPromise);
       }
 
-      // C. Eksekusi semua query secara paralel dalam satu transaksi
-      // Jika satu gagal, semua rollback otomatis.
       await Promise.all(updatePromises);
     });
   };

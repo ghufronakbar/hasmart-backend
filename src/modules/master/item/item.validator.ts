@@ -22,11 +22,43 @@ export const ItemBodySchema = z.object({
 
 export type ItemBodyType = z.infer<typeof ItemBodySchema>;
 
+export const MasterItemVariantUpdateSchema = z
+  .object({
+    id: z.number().optional(),
+    unit: z.string().min(1),
+    amount: z.number().int().positive(),
+    sellPrice: decimalSchema,
+    action: z.enum(["create", "update", "delete"]),
+  })
+  .refine((variant) => {
+    // jika create tidak usah kirim id
+    if (variant.action === "create") {
+      return variant.id === undefined;
+    }
+    // jika update harus kirim id
+    if (variant.action === "update") {
+      return variant.id !== undefined;
+    }
+    // jika delete harus kirim id
+    if (variant.action === "delete") {
+      return variant.id !== undefined;
+    }
+    return true;
+  });
+
+export type MasterItemVariantUpdateType = z.infer<
+  typeof MasterItemVariantUpdateSchema
+>;
+
 export const ItemUpdateBodySchema = z.object({
   name: z.string().min(1),
   masterSupplierId: z.number().int().positive(),
   masterItemCategoryId: z.number().int().positive(),
   isActive: z.boolean(),
+  buyPrice: decimalSchema,
+  masterItemVariants: z
+    .array(MasterItemVariantUpdateSchema)
+    .min(1, "Minimal harus ada 1 variant"),
 });
 
 export type ItemUpdateBodyType = z.infer<typeof ItemUpdateBodySchema>;
@@ -77,23 +109,6 @@ export const ItemQuerySchema = z.object({
 });
 
 export type ItemQueryType = z.infer<typeof ItemQuerySchema>;
-
-// Variant Validators
-export const VariantBodySchema = z.object({
-  unit: z.string().min(1),
-  amount: z.number().int().positive(),
-  sellPrice: decimalSchema,
-  isBaseUnit: z.boolean(),
-});
-
-export type VariantBodyType = z.infer<typeof VariantBodySchema>;
-
-export const VariantParamsSchema = z.object({
-  masterItemId: z.coerce.number(),
-  masterItemVariantId: z.coerce.number(),
-});
-
-export type VariantParamsType = z.infer<typeof VariantParamsSchema>;
 
 export const GetItemByCodeParamsSchema = z.object({
   code: z.string().min(1),

@@ -4,7 +4,7 @@ import {
   ItemBodyType,
   ItemQueryType,
   ItemUpdateBodyType,
-  VariantBodyType,
+  MasterItemVariantUpdateType,
 } from "./item.validator";
 import {
   ItemListResponse,
@@ -314,38 +314,189 @@ export class ItemService extends BaseService {
     return this.getItemById(itemId);
   };
 
-  updateItem = async (id: number, data: ItemUpdateBodyType) => {
+  updateItem = async (id: number, data: ItemUpdateBodyType, userId: number) => {
+    let countBaseUnit = 0;
+    for (const variant of data.masterItemVariants) {
+      if (variant.action !== "delete" && variant.amount === 1) {
+        countBaseUnit++;
+      }
+    }
+
+    if (countBaseUnit > 1) {
+      throw new BadRequestError("Hanya boleh ada 1 base unit");
+    }
+
+    if (countBaseUnit < 1) {
+      throw new BadRequestError("Harus ada 1 base unit");
+    }
     const item = await this.prisma.masterItem.findFirst({
       where: { id, deletedAt: null },
+      select: {
+        recordedBuyPrice: true,
+        itemBranches: {
+          where: {
+            deletedAt: null,
+          },
+          select: {
+            recordedStock: true,
+          },
+        },
+        masterItemVariants: {
+          select: {
+            id: true,
+          },
+          where: {
+            deletedAt: null,
+          },
+        },
+      },
     });
+
     if (!item) {
       throw new NotFoundError();
     }
 
+    let totalStock = 0;
+    for (const branch of item.itemBranches) {
+      totalStock += branch.recordedStock;
+    }
+
     // Validate supplier exists
-    const supplier = await this.prisma.masterSupplier.findFirst({
-      where: { id: data.masterSupplierId, deletedAt: null },
-    });
+    const [supplier, category] = await Promise.all([
+      this.prisma.masterSupplier.findFirst({
+        where: { id: data.masterSupplierId, deletedAt: null },
+        select: {
+          id: true,
+        },
+      }),
+      this.prisma.masterItemCategory.findFirst({
+        where: { id: data.masterItemCategoryId, deletedAt: null },
+        select: {
+          id: true,
+        },
+      }),
+    ]);
+
     if (!supplier) {
       throw new BadRequestError("Supplier tidak ditemukan");
     }
 
     // Validate category exists
-    const category = await this.prisma.masterItemCategory.findFirst({
-      where: { id: data.masterItemCategoryId, deletedAt: null },
-    });
     if (!category) {
       throw new BadRequestError("Kategori tidak ditemukan");
     }
 
-    await this.prisma.masterItem.update({
-      where: { id },
-      data: {
-        name: data.name,
-        masterSupplierId: data.masterSupplierId,
-        masterItemCategoryId: data.masterItemCategoryId,
-        isActive: data.isActive,
-      },
+    const rawVariantIds: number[] = item.masterItemVariants.map((v) => v.id);
+
+    const updateVariants: (MasterItemVariantUpdateType & { id: number })[] = [];
+    const deleteVariants: number[] = [];
+    const createVariants: MasterItemVariantUpdateType[] = [];
+
+    for (const variant of data.masterItemVariants) {
+      if (variant.action === "update") {
+        if (!variant.id) {
+          throw new BadRequestError("Id harus diisi saat update variant");
+        }
+        if (!rawVariantIds.includes(variant.id)) {
+          throw new BadRequestError("Variant tidak ditemukan");
+        }
+        updateVariants.push({
+          id: variant.id,
+          unit: variant.unit,
+          amount: variant.amount,
+          sellPrice: variant.sellPrice,
+          action: variant.action,
+        });
+      }
+
+      if (variant.action === "delete") {
+        if (!variant.id) {
+          throw new BadRequestError("Id harus diisi saat delete variant");
+        }
+        if (!rawVariantIds.includes(variant.id)) {
+          throw new BadRequestError("Variant tidak ditemukan");
+        }
+        deleteVariants.push(variant.id);
+      }
+
+      if (variant.action === "create") {
+        createVariants.push(variant);
+      }
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      const promises: Promise<unknown>[] = [];
+      const updateMaster = tx.masterItem.update({
+        where: { id },
+        data: {
+          name: data.name,
+          masterSupplierId: data.masterSupplierId,
+          masterItemCategoryId: data.masterItemCategoryId,
+          isActive: data.isActive,
+        },
+      });
+      promises.push(updateMaster);
+
+      // update
+      for (const variant of updateVariants) {
+        const updateVariant = tx.masterItemVariant.update({
+          where: { id: variant.id },
+          data: {
+            unit: variant.unit,
+            amount: variant.amount,
+            sellPrice: variant.sellPrice,
+            isBaseUnit: variant.amount === 1,
+          },
+        });
+        promises.push(updateVariant);
+      }
+
+      // delete
+      for (const variant of deleteVariants) {
+        const deleteVariant = tx.masterItemVariant.update({
+          where: { id: variant },
+          data: {
+            deletedAt: new Date(),
+          },
+        });
+        promises.push(deleteVariant);
+      }
+
+      // create
+      for (const variant of createVariants) {
+        const createVariant = tx.masterItemVariant.create({
+          data: {
+            masterItemId: id,
+            unit: variant.unit,
+            amount: variant.amount,
+            sellPrice: variant.sellPrice,
+            isBaseUnit: variant.amount === 1,
+            recordedBuyPrice: 0,
+            recordedProfitPercentage: 0,
+            recordedProfitAmount: 0,
+          },
+        });
+        promises.push(createVariant);
+      }
+
+      const isBuyPriceChanged = !item.recordedBuyPrice
+        .toDecimalPlaces(2)
+        .equals(data.buyPrice.toDecimalPlaces(2));
+
+      if (isBuyPriceChanged) {
+        const override = tx.itemBuyPriceOverride.create({
+          data: {
+            newBuyPrice: data.buyPrice,
+            snapshotStock: totalStock,
+            userId,
+            masterItemId: id,
+            notes: `Update harga beli dari ${item.recordedBuyPrice} menjadi ${data.buyPrice}`,
+          },
+        });
+        promises.push(override);
+      }
+
+      await Promise.all(promises);
     });
 
     await this.refreshBuyPriceService.refreshBuyPrice(id);
@@ -373,79 +524,5 @@ export class ItemService extends BaseService {
         },
       },
     });
-  };
-
-  // Variant methods
-  createVariant = async (masterItemId: number, data: VariantBodyType) => {
-    const item = await this.prisma.masterItem.findFirst({
-      where: { id: masterItemId, deletedAt: null },
-    });
-    if (!item) {
-      throw new NotFoundError();
-    }
-
-    const variant = await this.prisma.masterItemVariant.create({
-      data: {
-        masterItemId,
-        unit: data.unit,
-        amount: data.amount,
-        sellPrice: data.sellPrice,
-        isBaseUnit: data.isBaseUnit,
-        recordedBuyPrice: 0,
-        recordedProfitPercentage: 0,
-        recordedProfitAmount: 0,
-      },
-    });
-    await this.refreshBuyPriceService.refreshBuyPrice(masterItemId);
-    return variant;
-  };
-
-  updateVariant = async (
-    masterItemId: number,
-    variantId: number,
-    data: VariantBodyType,
-  ) => {
-    const variant = await this.prisma.masterItemVariant.findFirst({
-      where: { id: variantId, masterItemId, deletedAt: null },
-    });
-    if (!variant) {
-      throw new NotFoundError();
-    }
-
-    const updatedVariant = await this.prisma.masterItemVariant.update({
-      where: { id: variantId },
-      data: {
-        unit: data.unit,
-        amount: data.amount,
-        sellPrice: data.sellPrice,
-        isBaseUnit: data.isBaseUnit,
-      },
-    });
-    await this.refreshBuyPriceService.refreshBuyPrice(masterItemId);
-    return updatedVariant;
-  };
-
-  deleteVariant = async (masterItemId: number, variantId: number) => {
-    const variant = await this.prisma.masterItemVariant.findFirst({
-      where: { id: variantId, masterItemId, deletedAt: null },
-    });
-    if (!variant) {
-      throw new NotFoundError();
-    }
-
-    // Check if it's the last variant
-    const variantCount = await this.prisma.masterItemVariant.count({
-      where: { masterItemId, deletedAt: null },
-    });
-    if (variantCount <= 1) {
-      throw new BadRequestError("Item harus memiliki minimal 1 variant");
-    }
-
-    const deletedVariant = await this.prisma.masterItemVariant.update({
-      where: { id: variantId },
-      data: { deletedAt: new Date() },
-    });
-    await this.refreshBuyPriceService.refreshBuyPrice(masterItemId);
-    return deletedVariant;
   };
 }

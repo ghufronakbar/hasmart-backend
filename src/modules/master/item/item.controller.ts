@@ -5,8 +5,6 @@ import {
   ItemBodyType,
   ItemUpdateBodyType,
   ItemParamsType,
-  VariantBodyType,
-  VariantParamsType,
   GetItemByCodeParamsType,
   ItemQueryType,
 } from "./item.validator";
@@ -47,41 +45,18 @@ export class ItemController extends BaseController {
   updateItem = async (req: Request, res: Response) => {
     const params = req.params as unknown as ItemParamsType;
     const data = req.body as ItemUpdateBodyType;
-    const result = await this.service.updateItem(params.masterItemId, data);
+    const user = req.user;
+    const result = await this.service.updateItem(
+      params.masterItemId,
+      data,
+      user?.userId!,
+    );
     return this.sendOk(req, res, result);
   };
 
   deleteItem = async (req: Request, res: Response) => {
     const params = req.params as unknown as ItemParamsType;
     const result = await this.service.deleteItem(params.masterItemId);
-    return this.sendOk(req, res, result);
-  };
-
-  // Variant methods
-  createVariant = async (req: Request, res: Response) => {
-    const params = req.params as unknown as ItemParamsType;
-    const data = req.body as VariantBodyType;
-    const result = await this.service.createVariant(params.masterItemId, data);
-    return this.sendOk(req, res, result);
-  };
-
-  updateVariant = async (req: Request, res: Response) => {
-    const params = req.params as unknown as VariantParamsType;
-    const data = req.body as VariantBodyType;
-    const result = await this.service.updateVariant(
-      params.masterItemId,
-      params.masterItemVariantId,
-      data,
-    );
-    return this.sendOk(req, res, result);
-  };
-
-  deleteVariant = async (req: Request, res: Response) => {
-    const params = req.params as unknown as VariantParamsType;
-    const result = await this.service.deleteVariant(
-      params.masterItemId,
-      params.masterItemVariantId,
-    );
     return this.sendOk(req, res, result);
   };
 

@@ -63,7 +63,8 @@ model User {
   deletedAt DateTime? @map("deleted_at")
 
   // user take action
-  recordActions RecordAction[]
+  recordActions         RecordAction[]
+  itemBuyPriceOverrides ItemBuyPriceOverride[]
 
   @@map("users")
 }
@@ -128,6 +129,9 @@ model MasterItem {
 
   // track adjustment
   transactionAdjustments TransactionAdjustment[]
+
+  // override stock
+  itemBuyPriceOverrides ItemBuyPriceOverride[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
@@ -935,4 +939,27 @@ model RecordAction {
   deletedAt DateTime? @map("deleted_at")
 
   @@map("record_actions")
+}
+
+model ItemBuyPriceOverride {
+  id Int @id @default(autoincrement()) @map("id")
+
+  masterItemId Int        @map("master_item_id")
+  masterItem   MasterItem @relation(fields: [masterItemId], references: [id])
+
+  // Harga baru yang diinput user
+  newBuyPrice Decimal @map("new_buy_price") @db.Decimal(18, 2)
+
+  // Stok saat override terjadi (Snapshot). 
+  // Penting! Karena ini jadi "bobot" perhitungan awal.
+  snapshotStock Int @map("snapshot_stock")
+
+  notes  String? @map("notes") @db.Text()
+  userId Int     @map("user_id") // Siapa yang mengubah
+  user   User    @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([masterItemId, createdAt])
+  @@map("item_buy_price_overrides")
 }

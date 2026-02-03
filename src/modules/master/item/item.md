@@ -131,64 +131,39 @@ Authorization: Bearer <token>
   "name": "Detergen Merk ABC Updated",
   "masterSupplierId": 1,
   "masterItemCategoryId": 1,
-  "isActive": true
+  "isActive": true,
+  "masterItemVariants": [
+    {
+      "id": 101,
+      "unit": "PCS",
+      "amount": 1,
+      "sellPrice": 16000,
+      "action": "update"
+    },
+    {
+      "unit": "BOX",
+      "amount": 24,
+      "sellPrice": 350000,
+      "action": "create"
+    },
+    {
+      "id": 102,
+      "unit": "PACK",
+      "amount": 12,
+      "sellPrice": 180000,
+      "action": "delete"
+    }
+  ]
 }
 ```
 
-> **Note:** Update hanya untuk MasterItem, tidak termasuk variants.
+> **Note:**
+>
+> - `action` wajib: `"create" | "update" | "delete"`
+> - `id` wajib untuk action `"update"` dan `"delete"`
+> - Harus menyisakan minimal 1 `baseUnit` (`amount: 1`) yang tidak didelete.
 
 ---
-
-### Delete Item
-
-```
-DELETE /api/master/item/:masterItemId
-Authorization: Bearer <token>
-```
-
----
-
-## Variant Endpoints
-
-### Add Variant
-
-```
-POST /api/master/item/:masterItemId/variant
-Authorization: Bearer <token>
-```
-
-**Body:**
-
-```json
-{
-  "unit": "BOX",
-  "amount": 48,
-  "sellPrice": 650000,
-  "isBaseUnit": false
-}
-```
-
----
-
-### Update Variant
-
-```
-PUT /api/master/item/:masterItemId/variant/:masterItemVariantId
-Authorization: Bearer <token>
-```
-
-**Body:** Same as Add Variant
-
----
-
-### Delete Variant
-
-```
-DELETE /api/master/item/:masterItemId/variant/:masterItemVariantId
-Authorization: Bearer <token>
-```
-
-> **Note:** Tidak bisa delete jika hanya tinggal 1 variant.
 
 ---
 

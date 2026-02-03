@@ -6,8 +6,6 @@ import {
   ItemBodySchema,
   ItemUpdateBodySchema,
   ItemParamsSchema,
-  VariantBodySchema,
-  VariantParamsSchema,
   GetItemByCodeParamsSchema,
   ItemQuerySchema,
 } from "./item.validator";
@@ -76,38 +74,6 @@ export class ItemRouter extends BaseRouter {
       validateHandler({ params: ItemParamsSchema }),
       asyncHandler(
         async (req, res) => await this.controller.deleteItem(req, res),
-      ),
-    );
-
-    // === Variant Routes ===
-
-    // POST /api/master/item/:masterItemId/variant
-    this.router.post(
-      "/:masterItemId/variant",
-      useAuth(this.jwtService),
-      validateHandler({ params: ItemParamsSchema, body: VariantBodySchema }),
-      asyncHandler(
-        async (req, res) => await this.controller.createVariant(req, res),
-      ),
-    );
-
-    // PUT /api/master/item/:masterItemId/variant/:masterItemVariantId
-    this.router.put(
-      "/:masterItemId/variant/:masterItemVariantId",
-      useAuth(this.jwtService),
-      validateHandler({ params: VariantParamsSchema, body: VariantBodySchema }),
-      asyncHandler(
-        async (req, res) => await this.controller.updateVariant(req, res),
-      ),
-    );
-
-    // DELETE /api/master/item/:masterItemId/variant/:masterItemVariantId
-    this.router.delete(
-      "/:masterItemId/variant/:masterItemVariantId",
-      useAuth(this.jwtService),
-      validateHandler({ params: VariantParamsSchema }),
-      asyncHandler(
-        async (req, res) => await this.controller.deleteVariant(req, res),
       ),
     );
 
