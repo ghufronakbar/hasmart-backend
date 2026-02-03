@@ -9,6 +9,7 @@ import {
   EditProfileBodyType,
   ChangePasswordBodyType,
   ResetPasswordBodyType,
+  UpdateUserAccessBodyType,
 } from "./user.validator";
 import {
   BadRequestError,
@@ -16,7 +17,7 @@ import {
   UnauthorizedError,
 } from "../../../utils/error";
 import { FilterQueryType } from "src/middleware/use-filter";
-import { Prisma } from ".prisma/client";
+import { Prisma, User } from ".prisma/client";
 
 export class UserService extends BaseService {
   constructor(
@@ -57,14 +58,6 @@ export class UserService extends BaseService {
       skip: filter?.skip,
       take: filter?.limit,
       orderBy: this.constructOrder(filter),
-      select: {
-        id: true,
-        name: true,
-        isActive: true,
-        isSuperUser: true,
-        createdAt: true,
-        updatedAt: true,
-      },
     };
     return args;
   }
@@ -157,7 +150,10 @@ export class UserService extends BaseService {
   login = async (data: LoginBodyType) => {
     const user = await this.prisma.user.findFirst({
       where: {
-        name: data.name?.toLowerCase(),
+        name: {
+          equals: data.name,
+          mode: "insensitive",
+        },
         deletedAt: null,
       },
     });
@@ -207,9 +203,27 @@ export class UserService extends BaseService {
       throw new UnauthorizedError("Refresh token tidak valid atau kadaluarsa");
     }
 
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: payload.userId,
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedError("User tidak ditemukan");
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedError("User tidak aktif");
+    }
+
+    if (user.deletedAt) {
+      throw new UnauthorizedError("User sudah dihapus");
+    }
+
     const accessToken = await this.jwt.signAccess({
-      userId: payload.userId,
-      name: payload.name,
+      userId: user.id,
+      name: user.name,
     });
 
     return { accessToken };
@@ -230,12 +244,15 @@ export class UserService extends BaseService {
     const hashedPassword = await this.password.hash(data.password);
 
     if (!existingUser) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { name, password, isActive, ...accessData } = data;
       const user = await this.prisma.user.create({
         data: {
-          name: data.name,
+          name,
           password: hashedPassword,
-          isActive: data.isActive,
+          isActive,
           isSuperUser: false,
+          ...accessData,
         },
       });
       return {
@@ -245,14 +262,16 @@ export class UserService extends BaseService {
         isSuperUser: user.isSuperUser,
       };
     } else {
+      const { name, password, isActive, ...accessData } = data;
       const user = await this.prisma.user.update({
         where: {
           id: existingUser.id,
         },
         data: {
-          name: data.name,
+          ...accessData,
+          name,
           password: hashedPassword,
-          isActive: data.isActive,
+          isActive,
           isSuperUser: false,
         },
       });
@@ -265,8 +284,44 @@ export class UserService extends BaseService {
     }
   };
 
+  // super user update access user lain
+  updateUserAccess = async (userId: number, data: UpdateUserAccessBodyType) => {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        id: userId,
+        deletedAt: null,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundError();
+    }
+
+    if (user.isSuperUser) {
+      throw new BadRequestError("Tidak bisa mengubah hak akses super user");
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        ...data,
+      },
+    });
+
+    return {
+      id: updatedUser.id,
+      name: updatedUser.name,
+      isActive: updatedUser.isActive,
+      isSuperUser: updatedUser.isSuperUser,
+    };
+  };
+
   // cek profile sendiri
-  whoami = async (userId: number) => {
+  whoami = async (
+    userId: number,
+  ): Promise<Omit<User, "password" | "refreshToken">> => {
     const user = await this.prisma.user.findFirst({
       where: {
         id: userId,
@@ -279,11 +334,38 @@ export class UserService extends BaseService {
     }
 
     return {
+      ...this.buildAccess(user),
       id: user.id,
       name: user.name,
-      isActive: user.isActive,
-      isSuperUser: user.isSuperUser,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      deletedAt: user.deletedAt,
     };
+  };
+
+  private buildAccess = (
+    user: User,
+  ): Omit<
+    User,
+    "password" | "deletedAt" | "updatedAt" | "createdAt" | "refreshToken"
+  > => {
+    const { isSuperUser } = user;
+
+    return Object.keys(user).reduce(
+      (acc, key) => {
+        if (key === "isSuperUser") {
+          return acc;
+        }
+        return {
+          ...acc,
+          [key]: isSuperUser || user[key],
+        };
+      },
+      {} as Omit<
+        User,
+        "password" | "deletedAt" | "updatedAt" | "createdAt" | "refreshToken"
+      >,
+    );
   };
 
   // untuk edit profile sendiri
@@ -300,9 +382,12 @@ export class UserService extends BaseService {
     }
 
     if (user.name !== data.name) {
-      const existingUser = await this.prisma.user.findUnique({
+      const existingUser = await this.prisma.user.findFirst({
         where: {
-          name: data.name?.toLowerCase(),
+          name: {
+            equals: data.name,
+            mode: "insensitive",
+          },
         },
       });
 

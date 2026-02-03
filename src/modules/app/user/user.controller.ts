@@ -8,6 +8,7 @@ import {
   EditProfileBodyType,
   ChangePasswordBodyType,
   ResetPasswordBodyType,
+  UpdateUserAccessBodyType,
 } from "./user.validator";
 
 export class UserController extends BaseController {
@@ -83,6 +84,13 @@ export class UserController extends BaseController {
     const userId = parseInt(req.params.id);
     const data = req.body as ResetPasswordBodyType;
     const result = await this.service.resetPassword(userId, data);
+    return this.sendOk(req, res, result);
+  };
+
+  updateUserAccess = async (req: Request, res: Response) => {
+    const userId = parseInt(req.params.id);
+    const data = req.body as UpdateUserAccessBodyType;
+    const result = await this.service.updateUserAccess(userId, data);
     return this.sendOk(req, res, result);
   };
 }

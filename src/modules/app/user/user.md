@@ -375,3 +375,33 @@ const ResetPasswordBodySchema = z.object({
 ## Database Model
 
 Lihat `prisma/schema.prisma` untuk model `User`.
+
+---
+
+### Update User Access (Protected)
+
+```
+PUT /api/app/user/:id/access
+Authorization: Bearer <token>
+```
+
+**Body:**
+
+```json
+{
+  "accessOverviewRead": true,
+  "accessPointOfSalesRead": true,
+  ...
+}
+```
+
+**Response:**
+
+```json
+{
+  "id": 2,
+  "name": "staff1",
+  "isActive": true,
+  "isSuperUser": false
+}
+```

@@ -54,8 +54,6 @@ model User {
   password String  @map("password")
   isActive Boolean @map("is_active")
 
-  // TODO: tambah hak akses
-
   isSuperUser Boolean @map("is_super_user") // user pertama yang dibuat ketika aplikasi dijalankan
 
   createdAt DateTime  @default(now()) @map("created_at")
@@ -66,7 +64,48 @@ model User {
   recordActions         RecordAction[]
   itemBuyPriceOverrides ItemBuyPriceOverride[]
 
-  refreshToken String? @unique @map("refresh_token")
+  refreshToken            String? @unique @map("refresh_token") @db.Text()
+  // access overview & pos
+  accessOverviewRead      Boolean @default(false) @map("access_overview_read")
+  accessPointOfSalesRead  Boolean @default(false) @map("access_point_of_sales_read")
+  accessPointOfSalesWrite Boolean @default(false) @map("access_point_of_sales_write")
+
+  // access app
+  accessAppUserRead    Boolean @default(false) @map("access_app_user_read")
+  accessAppUserWrite   Boolean @default(false) @map("access_app_user_write")
+  accessAppBranchWrite Boolean @default(false) @map("access_app_branch_write")
+
+  // access master item
+  accessMasterItemRead            Boolean @default(false) @map("access_master_item_read")
+  accessMasterItemWrite           Boolean @default(false) @map("access_master_item_write")
+  accessMasterItemCategoryRead    Boolean @default(false) @map("access_master_item_category_read")
+  accessMasterItemCategoryWrite   Boolean @default(false) @map("access_master_item_category_write")
+  accessMasterMemberRead          Boolean @default(false) @map("access_master_member_read")
+  accessMasterMemberWrite         Boolean @default(false) @map("access_master_member_write")
+  accessMasterMemberCategoryRead  Boolean @default(false) @map("access_master_member_category_read")
+  accessMasterMemberCategoryWrite Boolean @default(false) @map("access_master_member_category_write")
+  accessMasterSupplierRead        Boolean @default(false) @map("access_master_supplier_read")
+  accessMasterSupplierWrite       Boolean @default(false) @map("access_master_supplier_write")
+  accessMasterUnitRead            Boolean @default(false) @map("access_master_unit_read")
+  accessMasterUnitWrite           Boolean @default(false) @map("access_master_unit_write")
+
+  // transaction
+  accessTransactionPurchaseRead        Boolean @default(false) @map("access_transaction_purchase_read")
+  accessTransactionPurchaseWrite       Boolean @default(false) @map("access_transaction_purchase_write")
+  accessTransactionPurchaseReturnRead  Boolean @default(false) @map("access_transaction_purchase_return_read")
+  accessTransactionPurchaseReturnWrite Boolean @default(false) @map("access_transaction_purchase_return_write")
+  accessTransactionSalesRead           Boolean @default(false) @map("access_transaction_sales_read")
+  accessTransactionSalesWrite          Boolean @default(false) @map("access_transaction_sales_write")
+  accessTransactionSalesReturnRead     Boolean @default(false) @map("access_transaction_sales_return_read")
+  accessTransactionSalesReturnWrite    Boolean @default(false) @map("access_transaction_sales_return_write")
+  accessTransactionSellRead            Boolean @default(false) @map("access_transaction_sell_read")
+  accessTransactionSellWrite           Boolean @default(false) @map("access_transaction_sell_write")
+  accessTransactionSellReturnRead      Boolean @default(false) @map("access_transaction_sell_return_read")
+  accessTransactionSellReturnWrite     Boolean @default(false) @map("access_transaction_sell_return_write")
+  accessTransactionTransferRead        Boolean @default(false) @map("access_transaction_transfer_read")
+  accessTransactionTransferWrite       Boolean @default(false) @map("access_transaction_transfer_write")
+  accessTransactionAdjustmentRead      Boolean @default(false) @map("access_transaction_adjustment_read")
+  accessTransactionAdjustmentWrite     Boolean @default(false) @map("access_transaction_adjustment_write")
 
   @@map("users")
 }

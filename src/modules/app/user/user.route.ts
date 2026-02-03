@@ -9,6 +9,7 @@ import {
   EditProfileBodySchema,
   ChangePasswordBodySchema,
   ResetPasswordBodySchema,
+  UpdateUserAccessBodySchema,
 } from "./user.validator";
 import { useAuth } from "../../../middleware/use-auth";
 import { JwtService } from "../../common/jwt/jwt.service";
@@ -117,6 +118,16 @@ export class UserRouter extends BaseRouter {
       validateHandler({ body: ResetPasswordBodySchema }),
       asyncHandler(
         async (req, res) => await this.controller.resetPassword(req, res),
+      ),
+    );
+
+    // PUT /api/app/user/:id/access (Bearer Token Required)
+    this.router.put(
+      "/:id/access",
+      useAuth(this.jwtService),
+      validateHandler({ body: UpdateUserAccessBodySchema }),
+      asyncHandler(
+        async (req, res) => await this.controller.updateUserAccess(req, res),
       ),
     );
   }
