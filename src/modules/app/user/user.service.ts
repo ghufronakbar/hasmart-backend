@@ -131,7 +131,12 @@ export class UserService extends BaseService {
       },
     });
 
-    const token = await this.jwt.sign({
+    const accessToken = await this.jwt.signAccess({
+      userId: user.id,
+      name: user.name,
+    });
+
+    const refreshToken = await this.jwt.signRefresh({
       userId: user.id,
       name: user.name,
     });
@@ -143,7 +148,8 @@ export class UserService extends BaseService {
         isActive: user.isActive,
         isSuperUser: user.isSuperUser,
       },
-      accessToken: token,
+      accessToken,
+      refreshToken,
     };
   };
 
@@ -173,7 +179,12 @@ export class UserService extends BaseService {
       throw new BadRequestError("Username atau password salah");
     }
 
-    const token = await this.jwt.sign({
+    const accessToken = await this.jwt.signAccess({
+      userId: user.id,
+      name: user.name,
+    });
+
+    const refreshToken = await this.jwt.signRefresh({
       userId: user.id,
       name: user.name,
     });
@@ -185,8 +196,23 @@ export class UserService extends BaseService {
         isActive: user.isActive,
         isSuperUser: user.isSuperUser,
       },
-      accessToken: token,
+      accessToken,
+      refreshToken,
     };
+  };
+
+  refresh = async (refreshToken: string) => {
+    const payload = await this.jwt.verifyRefreshToken(refreshToken);
+    if (!payload) {
+      throw new UnauthorizedError("Refresh token tidak valid atau kadaluarsa");
+    }
+
+    const accessToken = await this.jwt.signAccess({
+      userId: payload.userId,
+      name: payload.name,
+    });
+
+    return { accessToken };
   };
 
   // super user create user lain

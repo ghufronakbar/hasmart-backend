@@ -66,6 +66,8 @@ model User {
   recordActions         RecordAction[]
   itemBuyPriceOverrides ItemBuyPriceOverride[]
 
+  refreshToken String? @unique @map("refresh_token")
+
   @@map("users")
 }
 

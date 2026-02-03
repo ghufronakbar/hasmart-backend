@@ -32,6 +32,15 @@ export class UserController extends BaseController {
     return this.sendOk(req, res, result);
   };
 
+  refresh = async (req: Request, res: Response) => {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      throw new Error("Refresh token required");
+    }
+    const result = await this.service.refresh(refreshToken);
+    return this.sendOk(req, res, result);
+  };
+
   getAllUsers = async (req: Request, res: Response) => {
     const filter = req.filterQuery;
     const { pagination, rows } = await this.service.getAllUsers(filter);

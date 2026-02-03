@@ -20,7 +20,7 @@ export const useAuth = (jwtService: JwtService) => {
       }
 
       const token = authHeader.substring(7);
-      const payload = await jwtService.verify(token);
+      const payload = await jwtService.verifyAccess(token);
 
       if (!payload) {
         throw new UnauthorizedError();

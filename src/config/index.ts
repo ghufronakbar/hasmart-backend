@@ -3,7 +3,10 @@ import { z } from "zod";
 const CommonEnvSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65535),
   BASE_URL: z.string().url(),
-  JWT_SECRET: z.string().min(32),
+  JWT_ACCESS_SECRET: z.string().min(32),
+  JWT_REFRESH_SECRET: z.string().min(32),
+  JWT_ACCESS_EXPIRY: z.string().default("15m"),
+  JWT_REFRESH_EXPIRY: z.string().default("24h"),
 });
 
 type CommonEnv = z.infer<typeof CommonEnvSchema>;

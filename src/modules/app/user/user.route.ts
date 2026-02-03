@@ -48,6 +48,12 @@ export class UserRouter extends BaseRouter {
       asyncHandler(async (req, res) => await this.controller.login(req, res)),
     );
 
+    // POST /api/app/user/refresh
+    this.router.post(
+      "/refresh",
+      asyncHandler(async (req, res) => await this.controller.refresh(req, res)),
+    );
+
     // GET /api/app/user (Bearer Token Required)
     this.router.get(
       "/",

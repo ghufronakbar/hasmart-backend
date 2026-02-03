@@ -73,7 +73,8 @@ POST /api/app/user/first-time-setup
     "isActive": true,
     "isSuperUser": true
   },
-  "accessToken": "eyJ..."
+  "accessToken": "eyJ...",
+  "refreshToken": "eyJ..."
 }
 ```
 
@@ -106,6 +107,33 @@ POST /api/app/user/login
     "isActive": true,
     "isSuperUser": true
   },
+  "accessToken": "eyJ...",
+  "refreshToken": "eyJ..."
+}
+```
+
+---
+
+### Refresh Token
+
+```
+
+POST /api/app/user/refresh
+
+```
+
+**Body:**
+
+```json
+{
+  "refreshToken": "eyJ..."
+}
+```
+
+**Response:**
+
+```json
+{
   "accessToken": "eyJ..."
 }
 ```

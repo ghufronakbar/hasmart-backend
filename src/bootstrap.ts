@@ -104,7 +104,7 @@ const cfg = new Config();
 // init common services
 const prismaService = new PrismaService();
 const passwordService = new PasswordService();
-const jwtService = new JwtService(cfg);
+const jwtService = new JwtService(cfg, prismaService);
 
 // init transaction common services
 const refreshStockService = new RefreshStockService(prismaService);
