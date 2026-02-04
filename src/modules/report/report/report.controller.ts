@@ -1,0 +1,95 @@
+// hasmart-backend/src/modules/report/report/report.controller.ts
+import { BaseController } from "../../../base/base-controller";
+import { ReportService } from "./report.service";
+import { Request, Response } from "express";
+import { ReportQueryFilterType } from "./report.validator";
+
+export class ReportController extends BaseController {
+  constructor(private service: ReportService) {
+    super();
+  }
+
+  getPurchaseReport = async (req: Request, res: Response) => {
+    const query = req.query as unknown as ReportQueryFilterType;
+    const filter = req.filterQuery;
+
+    const result = await this.service.getPurchaseReport(query, filter);
+
+    res.setHeader("Content-Type", result.mimeType);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=${result.fileName}`,
+    );
+    res.send(result.buffer);
+  };
+
+  getPurchaseReturnReport = async (req: Request, res: Response) => {
+    const query = req.query as unknown as ReportQueryFilterType;
+    const filter = req.filterQuery;
+
+    const result = await this.service.getPurchaseReturnReport(query, filter);
+
+    res.setHeader("Content-Type", result.mimeType);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=${result.fileName}`,
+    );
+    res.send(result.buffer);
+  };
+
+  getSalesReport = async (req: Request, res: Response) => {
+    const query = req.query as unknown as ReportQueryFilterType;
+    const filter = req.filterQuery;
+
+    const result = await this.service.getSalesReport(query, filter);
+
+    res.setHeader("Content-Type", result.mimeType);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=${result.fileName}`,
+    );
+    res.send(result.buffer);
+  };
+
+  getSalesReturnReport = async (req: Request, res: Response) => {
+    const query = req.query as unknown as ReportQueryFilterType;
+    const filter = req.filterQuery;
+
+    const result = await this.service.getSalesReturnReport(query, filter);
+
+    res.setHeader("Content-Type", result.mimeType);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=${result.fileName}`,
+    );
+    res.send(result.buffer);
+  };
+
+  getSellReport = async (req: Request, res: Response) => {
+    const query = req.query as unknown as ReportQueryFilterType;
+    const filter = req.filterQuery;
+
+    const result = await this.service.getSellReport(query, filter);
+
+    res.setHeader("Content-Type", result.mimeType);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=${result.fileName}`,
+    );
+    res.send(result.buffer);
+  };
+
+  getSellReturnReport = async (req: Request, res: Response) => {
+    const query = req.query as unknown as ReportQueryFilterType;
+    const filter = req.filterQuery;
+
+    const result = await this.service.getSellReturnReport(query, filter);
+
+    res.setHeader("Content-Type", result.mimeType);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=${result.fileName}`,
+    );
+    res.send(result.buffer);
+  };
+}

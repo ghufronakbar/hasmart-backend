@@ -286,6 +286,7 @@ export class UserService extends BaseService {
 
   // super user update access user lain
   updateUserAccess = async (userId: number, data: UpdateUserAccessBodyType) => {
+    console.log(data);
     const user = await this.prisma.user.findFirst({
       where: {
         id: userId,

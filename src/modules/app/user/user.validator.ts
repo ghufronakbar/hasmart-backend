@@ -20,6 +20,7 @@ export type LoginBodyType = z.infer<typeof LoginBodySchema>;
 
 const UserAccessSchema = z.object({
   accessOverviewRead: z.boolean().default(false),
+  accessReportRead: z.boolean().default(false),
   accessPointOfSalesRead: z.boolean().default(false),
   accessPointOfSalesWrite: z.boolean().default(false),
   accessAppUserRead: z.boolean().default(false),

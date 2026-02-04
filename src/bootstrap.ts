@@ -89,6 +89,13 @@ import { OverviewRouter } from "./modules/overview/overview/overview.route";
 import { OverviewController } from "./modules/overview/overview/overview.controller";
 import { OverviewService } from "./modules/overview/overview/overview.service";
 
+// Report Module
+import { ReportRouter } from "./modules/report/report/report.route";
+import { ReportController } from "./modules/report/report/report.controller";
+import { ReportService } from "./modules/report/report/report.service";
+import { ReportPdfService } from "./modules/report/report-pdf/report-pdf.service";
+import { ReportXlsxService } from "./modules/report/report-xlsx/report-xlsx.service";
+
 // Common Services
 import { PrismaService } from "./modules/common/prisma/prisma.service";
 import { PasswordService } from "./modules/common/password/password.service";
@@ -230,6 +237,17 @@ const overviewService = new OverviewService(prismaService);
 const overviewController = new OverviewController(overviewService);
 const overviewRouter = new OverviewRouter(overviewController, jwtService);
 
+// init report module
+const reportPdfService = new ReportPdfService();
+const reportXlsxService = new ReportXlsxService();
+const reportService = new ReportService(
+  prismaService,
+  reportPdfService,
+  reportXlsxService,
+);
+const reportController = new ReportController(reportService);
+const reportRouter = new ReportRouter(reportController, jwtService);
+
 // use routers
 api.use("/app/branch", branchRouter.router);
 api.use("/app/user", userRouter.router);
@@ -248,5 +266,6 @@ api.use("/transaction/sell-return", sellReturnRouter.router);
 api.use("/transaction/transfer", transferRouter.router);
 api.use("/transaction/adjust-stock", adjustStockRouter.router);
 api.use("/overview", overviewRouter.router);
+api.use("/report", reportRouter.router);
 
 export default api;
