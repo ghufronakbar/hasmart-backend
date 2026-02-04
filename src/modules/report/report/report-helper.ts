@@ -1,26 +1,9 @@
-import path from "path";
+import { Roboto } from "pdfmake/fonts/Roboto";
 
 export class ReportHelper {
   static getFonts() {
     return {
-      Roboto: {
-        normal: path.join(
-          __dirname,
-          "../../../../node_modules/pdfmake/fonts/Roboto/Roboto-Regular.ttf",
-        ),
-        bold: path.join(
-          __dirname,
-          "../../../../node_modules/pdfmake/fonts/Roboto/Roboto-Medium.ttf",
-        ),
-        italics: path.join(
-          __dirname,
-          "../../../../node_modules/pdfmake/fonts/Roboto/Roboto-Italic.ttf",
-        ),
-        bolditalics: path.join(
-          __dirname,
-          "../../../../node_modules/pdfmake/fonts/Roboto/Roboto-MediumItalic.ttf",
-        ),
-      },
+      Roboto,
     };
   }
 
