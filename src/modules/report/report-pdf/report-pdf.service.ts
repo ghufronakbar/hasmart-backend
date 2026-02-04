@@ -11,6 +11,8 @@ import {
   SellReportItem,
   SellReturnReportItem,
   ItemReportItem,
+  MemberReportItem,
+  MemberPurchaseReportItem,
 } from "../report/report.interface";
 import { ReportHelper } from "../report/report-helper";
 
@@ -948,6 +950,124 @@ export class ReportPdfService extends BaseService {
       const chunks: Buffer[] = [];
 
       pdfDoc.on("data", (chunk: Buffer) => chunks.push(chunk));
+      pdfDoc.on("end", () => resolve(Buffer.concat(chunks)));
+      pdfDoc.on("error", (err: Error) => reject(err));
+
+      pdfDoc.end();
+    });
+  }
+  async generateMemberReport(data: MemberReportItem[]): Promise<Buffer> {
+    const fonts = ReportHelper.getFonts();
+    const printer = new PdfPrinter(fonts);
+
+    const content: any[] = [{ text: "Laporan Member", style: "header" }];
+
+    data.forEach((category) => {
+      content.push({
+        text: `Kategori: ${category.categoryName} (${category.categoryCode})`,
+        style: "subHeader",
+        margin: [0, 15, 0, 5],
+      });
+
+      content.push({
+        style: "tableExample",
+        table: {
+          headerRows: 1,
+          widths: ["auto", "*", "auto", "auto", "*", "auto"],
+          body: [
+            [
+              { text: "Kode", style: "tableHeader" },
+              { text: "Nama", style: "tableHeader" },
+              { text: "No. HP", style: "tableHeader" },
+              { text: "Email", style: "tableHeader" },
+              { text: "Alamat", style: "tableHeader" },
+              { text: "Tgl Daftar", style: "tableHeader" },
+            ],
+            ...category.members.map((member) => [
+              member.code,
+              member.name,
+              member.phone,
+              member.email,
+              member.address,
+              ReportHelper.formatDate(member.createdAt),
+            ]),
+          ],
+        },
+      });
+    });
+
+    const docDefinition: TDocumentDefinitions = {
+      content: content,
+      styles: ReportHelper.getStyles(),
+    };
+
+    const pdfDoc = await printer.createPdfKitDocument(docDefinition);
+
+    return new Promise((resolve, reject) => {
+      const chunks: Uint8Array[] = [];
+
+      pdfDoc.on("data", (chunk: Uint8Array) => chunks.push(chunk));
+      pdfDoc.on("end", () => resolve(Buffer.concat(chunks)));
+      pdfDoc.on("error", (err: Error) => reject(err));
+
+      pdfDoc.end();
+    });
+  }
+  async generateMemberPurchaseReport(
+    data: MemberPurchaseReportItem[],
+  ): Promise<Buffer> {
+    const fonts = ReportHelper.getFonts();
+    const printer = new PdfPrinter(fonts);
+
+    const content: any[] = [
+      { text: "Laporan Pembelian Member", style: "header" },
+    ];
+
+    content.push({
+      style: "tableExample",
+      table: {
+        headerRows: 1,
+        widths: ["auto", "*", "auto", "auto", "auto", "auto", "auto"],
+        body: [
+          [
+            { text: "Kode", style: "tableHeader" },
+            { text: "Nama", style: "tableHeader" },
+            { text: "Kategori", style: "tableHeader" },
+            { text: "No. HP", style: "tableHeader" },
+            { text: "Email", style: "tableHeader" },
+            { text: "Frekuensi", style: "tableHeader", alignment: "right" },
+            { text: "Total", style: "tableHeader", alignment: "right" },
+          ],
+          ...data.map((item) => [
+            item.code,
+            item.name,
+            item.category,
+            item.phone,
+            item.email,
+            {
+              text: item.totalPurchaseFrequency.toString(),
+              alignment: "right" as const,
+            },
+            {
+              text: ReportHelper.formatCurrency(item.totalPurchaseAmount),
+              alignment: "right" as const,
+            },
+          ]),
+        ],
+      },
+    });
+
+    const docDefinition: TDocumentDefinitions = {
+      content: content,
+      styles: ReportHelper.getStyles(),
+    };
+
+    const pdfDoc = await printer.createPdfKitDocument(docDefinition);
+
+    return new Promise((resolve, reject) => {
+      const chunks: Uint8Array[] = [];
+
+      pdfDoc.on("data", (chunk: Uint8Array) => chunks.push(chunk));
       pdfDoc.on("end", () => resolve(Buffer.concat(chunks)));
       pdfDoc.on("error", (err: Error) => reject(err));
 

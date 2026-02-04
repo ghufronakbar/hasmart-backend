@@ -9,6 +9,8 @@ import {
   SellReportItem,
   SellReturnReportItem,
   ItemReportItem,
+  MemberReportItem,
+  MemberPurchaseReportItem,
 } from "../report/report.interface";
 
 export class ReportXlsxService extends BaseService {
@@ -626,6 +628,115 @@ export class ReportXlsxService extends BaseService {
     worksheet.getColumn(9).width = 15;
     worksheet.getColumn(10).width = 15;
     worksheet.getColumn(11).width = 20;
+
+    // Write to buffer
+    const buffer = await workbook.xlsx.writeBuffer();
+    return buffer as unknown as Buffer;
+  }
+  async generateMemberReport(data: MemberReportItem[]): Promise<Buffer> {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Member Report");
+
+    // Manually manage rows
+    let currentRow = 1;
+
+    // Report Title
+    const titleRow = worksheet.getRow(currentRow++);
+    titleRow.getCell(1).value = "Laporan Member";
+    titleRow.getCell(1).font = { bold: true, size: 14 };
+    currentRow++; // Gap
+
+    data.forEach((category) => {
+      // Category Header
+      const categoryRow = worksheet.getRow(currentRow++);
+      categoryRow.getCell(1).value =
+        `Kategori: ${category.categoryName} (${category.categoryCode})`;
+      categoryRow.getCell(1).font = { bold: true, size: 12 };
+
+      // Table Header
+      const tableHeaderRow = worksheet.getRow(currentRow++);
+      tableHeaderRow.getCell(1).value = "Kode";
+      tableHeaderRow.getCell(2).value = "Nama";
+      tableHeaderRow.getCell(3).value = "No. HP";
+      tableHeaderRow.getCell(4).value = "Email";
+      tableHeaderRow.getCell(5).value = "Alamat";
+      tableHeaderRow.getCell(6).value = "Tgl Daftar";
+      tableHeaderRow.font = { bold: true };
+
+      // Members
+      category.members.forEach((member) => {
+        const row = worksheet.getRow(currentRow++);
+        row.getCell(1).value = member.code;
+        row.getCell(2).value = member.name;
+        row.getCell(3).value = member.phone;
+        row.getCell(4).value = member.email;
+        row.getCell(5).value = member.address;
+        row.getCell(6).value = new Date(member.createdAt);
+        row.getCell(6).numFmt = "d/m/yyyy";
+      });
+
+      currentRow++; // Gap between categories
+    });
+
+    // Adjust column widths
+    worksheet.getColumn(1).width = 15;
+    worksheet.getColumn(2).width = 30;
+    worksheet.getColumn(3).width = 15;
+    worksheet.getColumn(4).width = 25;
+    worksheet.getColumn(5).width = 40;
+    worksheet.getColumn(6).width = 15;
+
+    // Write to buffer
+    const buffer = await workbook.xlsx.writeBuffer();
+    return buffer as unknown as Buffer;
+  }
+  async generateMemberPurchaseReport(
+    data: MemberPurchaseReportItem[],
+  ): Promise<Buffer> {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Member Purchase Report");
+
+    // Manually manage rows
+    let currentRow = 1;
+
+    // Report Title
+    const titleRow = worksheet.getRow(currentRow++);
+    titleRow.getCell(1).value = "Laporan Pembelian Member";
+    titleRow.getCell(1).font = { bold: true, size: 14 };
+    currentRow++; // Gap
+
+    // Table Header
+    const tableHeaderRow = worksheet.getRow(currentRow++);
+    tableHeaderRow.getCell(1).value = "Kode";
+    tableHeaderRow.getCell(2).value = "Nama";
+    tableHeaderRow.getCell(3).value = "Kategori";
+    tableHeaderRow.getCell(4).value = "No. HP";
+    tableHeaderRow.getCell(5).value = "Email";
+    tableHeaderRow.getCell(6).value = "Frekuensi";
+    tableHeaderRow.getCell(7).value = "Total";
+    tableHeaderRow.font = { bold: true };
+
+    // Members
+    data.forEach((item) => {
+      const row = worksheet.getRow(currentRow++);
+      row.getCell(1).value = item.code;
+      row.getCell(2).value = item.name;
+      row.getCell(3).value = item.category;
+      row.getCell(4).value = item.phone;
+      row.getCell(5).value = item.email;
+      row.getCell(6).value = item.totalPurchaseFrequency;
+      row.getCell(7).value = item.totalPurchaseAmount;
+      row.getCell(7).numFmt = "#,##0.00";
+    });
+
+    // Adjust column widths
+    worksheet.getColumn(1).width = 15;
+    worksheet.getColumn(2).width = 30;
+    worksheet.getColumn(3).width = 15;
+    worksheet.getColumn(4).width = 15;
+    worksheet.getColumn(5).width = 25;
+    worksheet.getColumn(6).width = 10;
+    worksheet.getColumn(7).width = 20;
 
     // Write to buffer
     const buffer = await workbook.xlsx.writeBuffer();

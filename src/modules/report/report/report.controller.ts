@@ -95,8 +95,37 @@ export class ReportController extends BaseController {
 
   getItemReport = async (req: Request, res: Response) => {
     const query = req.query as unknown as ReportQueryFilterType;
+    const branchQuery = req.branchQuery;
 
-    const result = await this.service.getItemReport(query);
+    const result = await this.service.getItemReport(query, branchQuery);
+
+    res.setHeader("Content-Type", result.mimeType);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=${result.fileName}`,
+    );
+    res.send(result.buffer);
+  };
+
+  getMemberReport = async (req: Request, res: Response) => {
+    const query = req.query as unknown as ReportQueryFilterType;
+    const filter = req.filterQuery;
+
+    const result = await this.service.getMemberReport(query, filter);
+
+    res.setHeader("Content-Type", result.mimeType);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=${result.fileName}`,
+    );
+    res.send(result.buffer);
+  };
+
+  getMemberPurchaseReport = async (req: Request, res: Response) => {
+    const query = req.query as unknown as ReportQueryFilterType;
+    const filter = req.filterQuery;
+
+    const result = await this.service.getMemberPurchaseReport(query, filter);
 
     res.setHeader("Content-Type", result.mimeType);
     res.setHeader(

@@ -91,5 +91,24 @@ export class ReportRouter extends BaseRouter {
         async (req, res) => await this.controller.getItemReport(req, res),
       ),
     );
+
+    this.router.get(
+      "/member",
+      useFilter(),
+      // useAuth(this.jwtService),
+      validateHandler({ query: ReportQueryFilterSchema }),
+      asyncHandler(
+        async (req, res) => await this.controller.getMemberReport(req, res),
+      ),
+    );
+    this.router.get(
+      "/member-purchase",
+      useFilter(),
+      validateHandler({ query: ReportQueryFilterSchema }),
+      asyncHandler(
+        async (req, res) =>
+          await this.controller.getMemberPurchaseReport(req, res),
+      ),
+    );
   }
 }

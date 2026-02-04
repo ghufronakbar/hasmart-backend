@@ -147,3 +147,28 @@ export interface SellReturnReportItem {
   totalAmount: number;
   items: SellReturnReportItemDetail[];
 }
+
+export interface MemberReportItemDetail {
+  code: string;
+  name: string;
+  phone: string;
+  email: string;
+  address: string;
+  createdAt: Date;
+}
+
+export interface MemberReportItem {
+  categoryName: string;
+  categoryCode: string;
+  members: MemberReportItemDetail[];
+}
+
+export interface MemberPurchaseReportItem {
+  code: string;
+  name: string;
+  category: string;
+  phone: string;
+  email: string;
+  totalPurchaseFrequency: number;
+  totalPurchaseAmount: number;
+}

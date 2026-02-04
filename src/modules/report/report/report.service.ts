@@ -15,6 +15,8 @@ import {
   SellReportItem,
   SellReturnReportItem,
   ItemReportItem,
+  MemberReportItem,
+  MemberPurchaseReportItem,
 } from "./report.interface";
 import { BranchQueryType } from "src/middleware/use-branch";
 
@@ -485,15 +487,39 @@ export class ReportService extends BaseService {
 
     const items = await this.prisma.masterItem.findMany({
       where,
-      include: {
-        masterItemCategory: true,
-        masterSupplier: true,
+      select: {
+        name: true,
+        code: true,
+        recordedBuyPrice: true,
+        masterItemCategory: {
+          select: {
+            name: true,
+            code: true,
+          },
+        },
+        masterSupplier: {
+          select: {
+            name: true,
+            code: true,
+          },
+        },
         masterItemVariants: {
           where: { deletedAt: null },
           orderBy: { amount: "asc" },
+          select: {
+            unit: true,
+            amount: true,
+            recordedProfitAmount: true,
+            recordedProfitPercentage: true,
+            sellPrice: true,
+          },
         },
         itemBranches: {
           where: { deletedAt: null, branchId: branchQuery?.branchId },
+          select: {
+            recordedStock: true,
+            branchId: true,
+          },
         },
       },
       orderBy: { name: "asc" },
@@ -555,6 +581,168 @@ export class ReportService extends BaseService {
       return {
         buffer,
         fileName: `master-item-report-${new Date().getTime()}.xlsx`,
+        mimeType:
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      };
+    }
+  };
+
+  getMemberReport = async (
+    query: ReportQueryFilterType,
+    filter?: FilterQueryType,
+  ): Promise<ReportResult> => {
+    // Member Filter
+    const memberWhere: Prisma.MasterMemberWhereInput = {
+      deletedAt: null,
+    };
+
+    const categories = await this.prisma.masterMemberCategory.findMany({
+      where: {
+        deletedAt: null,
+      },
+      include: {
+        masterMembers: {
+          where: memberWhere,
+          orderBy: { name: "asc" },
+        },
+      },
+      orderBy: { code: "asc" },
+    });
+
+    // Filter out categories with no members if filter is applied?
+    // User requirement: "begitu diulang hingga data dari category member habis"
+    // Usually reports don't show empty groups unless requested. Let's filter for cleaner report.
+    const activeCategories = categories.filter(
+      (c) => c.masterMembers.length > 0,
+    );
+
+    const reportData: MemberReportItem[] = activeCategories.map((c) => ({
+      categoryCode: c.code,
+      categoryName: c.name,
+      members: c.masterMembers.map((m) => ({
+        code: m.code,
+        name: m.name,
+        phone: m.phone || "-",
+        email: m.email || "-",
+        address: m.address || "-",
+        createdAt: m.createdAt,
+      })),
+    }));
+
+    if (query.exportAs === "pdf") {
+      const buffer = await this.pdfService.generateMemberReport(reportData);
+      return {
+        buffer,
+        fileName: `member-report-${new Date().getTime()}.pdf`,
+        mimeType: "application/pdf",
+      };
+    } else {
+      const buffer = await this.xlsxService.generateMemberReport(reportData);
+      return {
+        buffer,
+        fileName: `member-report-${new Date().getTime()}.xlsx`,
+        mimeType:
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      };
+    }
+  };
+  getMemberPurchaseReport = async (
+    query: ReportQueryFilterType,
+    filter?: FilterQueryType,
+  ): Promise<ReportResult> => {
+    const whereDate: Prisma.DateTimeFilter = {};
+    if (filter?.dateStart) whereDate.gte = new Date(filter.dateStart);
+    if (filter?.dateEnd) whereDate.lte = new Date(filter.dateEnd);
+
+    const hasDateFilter = filter?.dateStart || filter?.dateEnd;
+
+    // 1. Get Sales Transactions (POS) with Members
+    const salesTransactions = await this.prisma.transactionSales.findMany({
+      where: {
+        deletedAt: null,
+        masterMemberId: { not: null },
+        ...(hasDateFilter && { transactionDate: whereDate }),
+      },
+      include: {
+        masterMember: {
+          include: { masterMemberCategory: true },
+        },
+      },
+    });
+
+    // 2. Get Sell Transactions (B2B)
+    const sellTransactions = await this.prisma.transactionSell.findMany({
+      where: {
+        deletedAt: null,
+        ...(hasDateFilter && { transactionDate: whereDate }),
+      },
+      include: {
+        masterMember: {
+          include: { masterMemberCategory: true },
+        },
+      },
+    });
+
+    // 3. Aggregate Data
+    const memberMap = new Map<
+      number,
+      {
+        member: any; // Using any for simplicity as shapes match enough for aggregation info
+        frequency: number;
+        totalAmount: number;
+      }
+    >();
+
+    const processTransaction = (t: any) => {
+      const memberId = t.masterMemberId;
+      if (!memberId) return;
+
+      if (!memberMap.has(memberId)) {
+        memberMap.set(memberId, {
+          member: t.masterMember,
+          frequency: 0,
+          totalAmount: 0,
+        });
+      }
+
+      const entry = memberMap.get(memberId)!;
+      entry.frequency += 1;
+      entry.totalAmount += Number(t.recordedTotalAmount);
+    };
+
+    salesTransactions.forEach(processTransaction);
+    sellTransactions.forEach(processTransaction);
+
+    // 4. Transform to Report Items
+    const reportData: MemberPurchaseReportItem[] = Array.from(
+      memberMap.values(),
+    ).map((entry) => ({
+      code: entry.member.code,
+      name: entry.member.name,
+      category: entry.member.masterMemberCategory.name,
+      phone: entry.member.phone || "-",
+      email: entry.member.email || "-",
+      totalPurchaseFrequency: entry.frequency,
+      totalPurchaseAmount: entry.totalAmount,
+    }));
+
+    // Sort by Total Purchase Amount Descending
+    reportData.sort((a, b) => b.totalPurchaseAmount - a.totalPurchaseAmount);
+
+    if (query.exportAs === "pdf") {
+      const buffer =
+        await this.pdfService.generateMemberPurchaseReport(reportData);
+      return {
+        buffer,
+        fileName: `member-purchase-report-${new Date().getTime()}.pdf`,
+        mimeType: "application/pdf",
+      };
+    } else {
+      const buffer =
+        await this.xlsxService.generateMemberPurchaseReport(reportData);
+      return {
+        buffer,
+        fileName: `member-purchase-report-${new Date().getTime()}.xlsx`,
         mimeType:
           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       };
