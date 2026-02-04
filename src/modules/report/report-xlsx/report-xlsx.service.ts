@@ -8,6 +8,7 @@ import {
   SalesReturnReportItem,
   SellReportItem,
   SellReturnReportItem,
+  ItemReportItem,
 } from "../report/report.interface";
 
 export class ReportXlsxService extends BaseService {
@@ -552,6 +553,79 @@ export class ReportXlsxService extends BaseService {
     worksheet.getColumn(3).width = 10;
     worksheet.getColumn(4).width = 15;
     worksheet.getColumn(5).width = 20;
+
+    // Write to buffer
+    const buffer = await workbook.xlsx.writeBuffer();
+    return buffer as unknown as Buffer;
+  }
+
+  async generateItemReport(data: ItemReportItem[]): Promise<Buffer> {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Master Item Report");
+
+    // Manually manage rows
+    let currentRow = 1;
+
+    // Report Title
+    const titleRow = worksheet.getRow(currentRow++);
+    titleRow.getCell(1).value = "Laporan Master Barang";
+    titleRow.getCell(1).font = { bold: true, size: 14 };
+    currentRow++; // Gap
+
+    // Items Table Header
+    const tableHeaderRow = worksheet.getRow(currentRow++);
+    tableHeaderRow.getCell(1).value = "Kode";
+    tableHeaderRow.getCell(2).value = "Nama";
+    tableHeaderRow.getCell(3).value = "Stok";
+    tableHeaderRow.getCell(4).value = "Kategori";
+    tableHeaderRow.getCell(5).value = "Supplier";
+    tableHeaderRow.getCell(6).value = "Unit";
+    tableHeaderRow.getCell(7).value = "Conv";
+    tableHeaderRow.getCell(8).value = "Harga Beli";
+    tableHeaderRow.getCell(9).value = "Profit %";
+    tableHeaderRow.getCell(10).value = "Profit";
+    tableHeaderRow.getCell(11).value = "H. Jual";
+    tableHeaderRow.font = { bold: true };
+
+    // Items
+    data.forEach((item) => {
+      const row = worksheet.getRow(currentRow++);
+
+      // Only show item details for the first variant
+      if (item.isFirstVariant) {
+        row.getCell(1).value = item.code;
+        row.getCell(2).value = item.name;
+        row.getCell(3).value = item.stock;
+        row.getCell(4).value = item.category;
+        row.getCell(5).value = item.supplier;
+      } else {
+        row.getCell(1).value = "";
+        row.getCell(2).value = "";
+        row.getCell(3).value = "";
+        row.getCell(4).value = "";
+        row.getCell(5).value = "";
+      }
+
+      row.getCell(6).value = item.variantUnit;
+      row.getCell(7).value = item.variantAmount;
+      row.getCell(8).value = item.buyPrice;
+      row.getCell(9).value = item.profitPercentage;
+      row.getCell(10).value = item.profitAmount;
+      row.getCell(11).value = item.sellPrice;
+    });
+
+    // Adjust column widths manually
+    worksheet.getColumn(1).width = 15;
+    worksheet.getColumn(2).width = 30;
+    worksheet.getColumn(3).width = 10;
+    worksheet.getColumn(4).width = 10;
+    worksheet.getColumn(5).width = 8;
+    worksheet.getColumn(6).width = 15;
+    worksheet.getColumn(7).width = 10;
+    worksheet.getColumn(8).width = 15;
+    worksheet.getColumn(9).width = 15;
+    worksheet.getColumn(10).width = 15;
+    worksheet.getColumn(11).width = 20;
 
     // Write to buffer
     const buffer = await workbook.xlsx.writeBuffer();

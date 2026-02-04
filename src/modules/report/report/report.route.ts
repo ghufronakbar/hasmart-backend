@@ -7,6 +7,7 @@ import { ReportQueryFilterSchema } from "./report.validator";
 import { useFilter } from "../../../middleware/use-filter";
 import { JwtService } from "../../../modules/common/jwt/jwt.service";
 import { useAuth } from "../../../middleware/use-auth";
+import { useBranch } from "../../../middleware/use-branch";
 
 export class ReportRouter extends BaseRouter {
   constructor(
@@ -77,6 +78,17 @@ export class ReportRouter extends BaseRouter {
       validateHandler({ query: ReportQueryFilterSchema }),
       asyncHandler(
         async (req, res) => await this.controller.getSellReturnReport(req, res),
+      ),
+    );
+
+    this.router.get(
+      "/item",
+      useFilter(),
+      useBranch(),
+      // useAuth(this.jwtService),
+      validateHandler({ query: ReportQueryFilterSchema }),
+      asyncHandler(
+        async (req, res) => await this.controller.getItemReport(req, res),
       ),
     );
   }

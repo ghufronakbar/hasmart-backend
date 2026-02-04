@@ -92,4 +92,17 @@ export class ReportController extends BaseController {
     );
     res.send(result.buffer);
   };
+
+  getItemReport = async (req: Request, res: Response) => {
+    const query = req.query as unknown as ReportQueryFilterType;
+
+    const result = await this.service.getItemReport(query);
+
+    res.setHeader("Content-Type", result.mimeType);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=${result.fileName}`,
+    );
+    res.send(result.buffer);
+  };
 }

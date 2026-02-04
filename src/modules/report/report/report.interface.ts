@@ -98,6 +98,21 @@ export interface SellReportItemDetail {
   total: number;
 }
 
+export interface ItemReportItem {
+  code: string;
+  name: string;
+  stock: number;
+  category: string;
+  supplier: string;
+  variantUnit: string;
+  variantAmount: number;
+  buyPrice: number;
+  profitPercentage: number;
+  profitAmount: number;
+  sellPrice: number;
+  isFirstVariant: boolean; // Helper for formatting (row merging visual effect)
+}
+
 export interface SellReportItem {
   id: number;
   transactionDate: Date;

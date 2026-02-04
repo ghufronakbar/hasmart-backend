@@ -14,7 +14,9 @@ import {
   SalesReturnReportItem,
   SellReportItem,
   SellReturnReportItem,
+  ItemReportItem,
 } from "./report.interface";
+import { BranchQueryType } from "src/middleware/use-branch";
 
 export class ReportService extends BaseService {
   constructor(
@@ -28,12 +30,13 @@ export class ReportService extends BaseService {
   getPurchaseReport = async (
     query: ReportQueryFilterType,
     filter?: FilterQueryType,
+    branchQuery?: BranchQueryType,
   ): Promise<ReportResult> => {
     const where: Prisma.TransactionPurchaseWhereInput = {};
     where.deletedAt = null;
 
-    if (query?.branchId) {
-      where.branchId = Number(query.branchId);
+    if (branchQuery?.branchId) {
+      where.branchId = branchQuery.branchId;
     }
 
     if (filter?.dateStart || filter?.dateEnd) {
@@ -105,12 +108,13 @@ export class ReportService extends BaseService {
   getPurchaseReturnReport = async (
     query: ReportQueryFilterType,
     filter?: FilterQueryType,
+    branchQuery?: BranchQueryType,
   ): Promise<ReportResult> => {
     const where: Prisma.TransactionPurchaseReturnWhereInput = {};
     where.deletedAt = null;
 
-    if (query?.branchId) {
-      where.branchId = Number(query.branchId);
+    if (branchQuery?.branchId) {
+      where.branchId = branchQuery.branchId;
     }
 
     if (filter?.dateStart || filter?.dateEnd) {
@@ -182,12 +186,13 @@ export class ReportService extends BaseService {
   getSalesReport = async (
     query: ReportQueryFilterType,
     filter?: FilterQueryType,
+    branchQuery?: BranchQueryType,
   ): Promise<ReportResult> => {
     const where: Prisma.TransactionSalesWhereInput = {};
     where.deletedAt = null;
 
-    if (query?.branchId) {
-      where.branchId = Number(query.branchId);
+    if (branchQuery?.branchId) {
+      where.branchId = branchQuery.branchId;
     }
 
     if (filter?.dateStart || filter?.dateEnd) {
@@ -251,12 +256,13 @@ export class ReportService extends BaseService {
   getSalesReturnReport = async (
     query: ReportQueryFilterType,
     filter?: FilterQueryType,
+    branchQuery?: BranchQueryType,
   ): Promise<ReportResult> => {
     const where: Prisma.TransactionSalesReturnWhereInput = {};
     where.deletedAt = null;
 
-    if (query?.branchId) {
-      where.branchId = Number(query.branchId);
+    if (branchQuery?.branchId) {
+      where.branchId = branchQuery.branchId;
     }
 
     if (filter?.dateStart || filter?.dateEnd) {
@@ -322,12 +328,13 @@ export class ReportService extends BaseService {
   getSellReport = async (
     query: ReportQueryFilterType,
     filter?: FilterQueryType,
+    branchQuery?: BranchQueryType,
   ): Promise<ReportResult> => {
     const where: Prisma.TransactionSellWhereInput = {};
     where.deletedAt = null;
 
-    if (query?.branchId) {
-      where.branchId = Number(query.branchId);
+    if (branchQuery?.branchId) {
+      where.branchId = branchQuery.branchId;
     }
 
     if (filter?.dateStart || filter?.dateEnd) {
@@ -396,12 +403,13 @@ export class ReportService extends BaseService {
   getSellReturnReport = async (
     query: ReportQueryFilterType,
     filter?: FilterQueryType,
+    branchQuery?: BranchQueryType,
   ): Promise<ReportResult> => {
     const where: Prisma.TransactionSellReturnWhereInput = {};
     where.deletedAt = null;
 
-    if (query?.branchId) {
-      where.branchId = Number(query.branchId);
+    if (branchQuery?.branchId) {
+      where.branchId = branchQuery.branchId;
     }
 
     if (filter?.dateStart || filter?.dateEnd) {
@@ -460,6 +468,93 @@ export class ReportService extends BaseService {
       return {
         buffer,
         fileName: `sell-return-report-${new Date().getTime()}.xlsx`,
+        mimeType:
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      };
+    }
+  };
+
+  getItemReport = async (
+    query: ReportQueryFilterType,
+    branchQuery?: BranchQueryType,
+  ): Promise<ReportResult> => {
+    const where: Prisma.MasterItemWhereInput = {
+      deletedAt: null,
+      isActive: true,
+    };
+
+    const items = await this.prisma.masterItem.findMany({
+      where,
+      include: {
+        masterItemCategory: true,
+        masterSupplier: true,
+        masterItemVariants: {
+          where: { deletedAt: null },
+          orderBy: { amount: "asc" },
+        },
+        itemBranches: {
+          where: { deletedAt: null, branchId: branchQuery?.branchId },
+        },
+      },
+      orderBy: { name: "asc" },
+    });
+
+    const reportData: ItemReportItem[] = [];
+    const targetBranchId = branchQuery?.branchId || null;
+
+    items.forEach((item) => {
+      let stock = 0;
+
+      if (targetBranchId) {
+        const branchStock = item.itemBranches.find(
+          (ib) => ib.branchId === targetBranchId,
+        );
+        stock = branchStock?.recordedStock ?? 0;
+      } else {
+        stock = item.itemBranches.reduce(
+          (acc, ib) => acc + ib.recordedStock,
+          0,
+        );
+      }
+
+      if (item.masterItemVariants.length === 0) return;
+
+      item.masterItemVariants.forEach((variant, index) => {
+        const isFirstVariant = index === 0;
+
+        // Buy Price = Base Price * Amount (as per example PCS=3500, BOX=35000)
+        const baseBuyPrice = Number(item.recordedBuyPrice);
+        const variantBuyPrice = baseBuyPrice * variant.amount;
+
+        reportData.push({
+          code: item.code,
+          name: item.name,
+          stock: stock,
+          category: item.masterItemCategory.code,
+          supplier: item.masterSupplier.name,
+          variantUnit: variant.unit,
+          variantAmount: variant.amount,
+          buyPrice: variantBuyPrice,
+          profitPercentage: Number(variant.recordedProfitPercentage),
+          profitAmount: Number(variant.recordedProfitAmount),
+          sellPrice: Number(variant.sellPrice),
+          isFirstVariant: isFirstVariant,
+        });
+      });
+    });
+
+    if (query?.exportAs === "pdf") {
+      const buffer = await this.pdfService.generateItemReport(reportData);
+      return {
+        buffer,
+        fileName: `master-item-report-${new Date().getTime()}.pdf`,
+        mimeType: "application/pdf",
+      };
+    } else {
+      const buffer = await this.xlsxService.generateItemReport(reportData);
+      return {
+        buffer,
+        fileName: `master-item-report-${new Date().getTime()}.xlsx`,
         mimeType:
           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       };

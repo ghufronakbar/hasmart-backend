@@ -10,6 +10,7 @@ import {
   SalesReturnReportItem,
   SellReportItem,
   SellReturnReportItem,
+  ItemReportItem,
 } from "../report/report.interface";
 import { ReportHelper } from "../report/report-helper";
 
@@ -832,6 +833,121 @@ export class ReportPdfService extends BaseService {
       const chunks: Uint8Array[] = [];
 
       pdfDoc.on("data", (chunk: Uint8Array) => chunks.push(chunk));
+      pdfDoc.on("end", () => resolve(Buffer.concat(chunks)));
+      pdfDoc.on("error", (err: Error) => reject(err));
+
+      pdfDoc.end();
+    });
+  }
+
+  async generateItemReport(data: ItemReportItem[]): Promise<Buffer> {
+    const fonts = ReportHelper.getFonts();
+    const printer = new PdfPrinter(fonts);
+
+    const content: any[] = [
+      { text: "Laporan Master Barang", style: "header", margin: [0, 0, 0, 20] },
+      {
+        table: {
+          headerRows: 1,
+          widths: [
+            "auto",
+            "*",
+            "auto",
+            "auto",
+            "auto",
+            "auto",
+            "auto",
+            "auto",
+            "auto",
+            "auto",
+            "auto",
+          ],
+          body: [
+            [
+              { text: "Kode", style: "tableHeader" },
+              { text: "Nama", style: "tableHeader" },
+              { text: "Stok", style: "tableHeader" },
+              { text: "Kategori", style: "tableHeader" },
+              { text: "Supplier", style: "tableHeader" },
+              { text: "Unit", style: "tableHeader" },
+              { text: "Conv", style: "tableHeader" },
+              { text: "Harga Beli", style: "tableHeader" },
+              { text: "Profit %", style: "tableHeader" },
+              { text: "Profit", style: "tableHeader" },
+              { text: "H. Jual", style: "tableHeader" },
+            ],
+            ...data.map((item) => {
+              // Row styling
+              const rowStyle = item.isFirstVariant ? {} : { color: "#555" };
+              const noBorder = [false, false, false, false]; // Optional: remove border for better merge look?
+              // For simple implementation, keep borders but empty text.
+
+              return [
+                {
+                  text: item.isFirstVariant ? item.code : "",
+                  style: "tableBody",
+                },
+                {
+                  text: item.isFirstVariant ? item.name : "",
+                  style: "tableBody",
+                },
+                {
+                  text: item.isFirstVariant ? item.stock : "",
+                  style: "tableBody",
+                  alignment: "center",
+                },
+                {
+                  text: item.isFirstVariant ? item.category : "",
+                  style: "tableBody",
+                },
+                {
+                  text: item.isFirstVariant ? item.supplier : "",
+                  style: "tableBody",
+                },
+                { text: item.variantUnit, style: "tableBody" },
+                { text: item.variantAmount, style: "tableBody" },
+                {
+                  text: ReportHelper.formatCurrency(item.buyPrice),
+                  style: "tableBody",
+                  alignment: "right",
+                },
+                {
+                  text: `${item.profitPercentage}%`,
+                  style: "tableBody",
+                  alignment: "right",
+                },
+                {
+                  text: ReportHelper.formatCurrency(item.profitAmount),
+                  style: "tableBody",
+                  alignment: "right",
+                },
+                {
+                  text: ReportHelper.formatCurrency(item.sellPrice),
+                  style: "tableBody",
+                  alignment: "right",
+                },
+              ];
+            }),
+          ],
+        },
+      },
+    ];
+
+    const docDefinition = {
+      content,
+      styles: ReportHelper.getStyles(),
+      defaultStyle: {
+        fontSize: 9, // Smaller font for many columns
+      },
+      pageOrientation: "landscape", // Landscape for wide table
+      pageSize: "A4",
+    };
+
+    return new Promise(async (resolve, reject) => {
+      const pdfDoc = await printer.createPdfKitDocument(docDefinition);
+      const chunks: Buffer[] = [];
+
+      pdfDoc.on("data", (chunk: Buffer) => chunks.push(chunk));
       pdfDoc.on("end", () => resolve(Buffer.concat(chunks)));
       pdfDoc.on("error", (err: Error) => reject(err));
 

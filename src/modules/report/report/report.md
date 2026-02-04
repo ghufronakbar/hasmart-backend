@@ -85,6 +85,17 @@ Retrieves a list of B2B sales return transactions.
 
 - **URL**: `GET /report/sell-return`
 - **Example Request**:
-  ```http
   GET /report/sell-return?exportAs=pdf&accessToken=abc.123.xyz
+  ```
+
+  ```
+
+### 7. Master Item Report (`Laporan Master Barang`)
+
+Retrieves a list of items and their variants (Flat structure).
+
+- **URL**: `GET /report/item`
+- **Example Request**:
+  ```http
+  GET /report/item?exportAs=xlsx&accessToken=abc.123.xyz&branchId=1
   ```
