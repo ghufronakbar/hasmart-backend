@@ -105,6 +105,9 @@ import { Config } from "./config";
 import { ReceiptService } from "./modules/report/receipt/receipt.service";
 import { ReceiptController } from "./modules/report/receipt/receipt.controller";
 import { ReceiptRouter } from "./modules/report/receipt/receipt.route";
+import { LabelService } from "./modules/report/label/label.service";
+import { LabelController } from "./modules/report/label/label.controller";
+import { LabelRouter } from "./modules/report/label/label.route";
 
 const api = express.Router();
 
@@ -256,6 +259,11 @@ const receiptService = new ReceiptService(prismaService);
 const receiptController = new ReceiptController(receiptService);
 const receiptRouter = new ReceiptRouter(receiptController, jwtService);
 
+// init label module
+const labelService = new LabelService(prismaService);
+const labelController = new LabelController(labelService);
+const labelRouter = new LabelRouter(labelController, jwtService);
+
 // use routers
 api.use("/app/branch", branchRouter.router);
 api.use("/app/user", userRouter.router);
@@ -276,5 +284,6 @@ api.use("/transaction/adjust-stock", adjustStockRouter.router);
 api.use("/overview", overviewRouter.router);
 api.use("/report", reportRouter.router);
 api.use("/report/receipt", receiptRouter.router);
+api.use("/report/label", labelRouter.router);
 
 export default api;
