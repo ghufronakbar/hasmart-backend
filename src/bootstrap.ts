@@ -102,6 +102,9 @@ import { PasswordService } from "./modules/common/password/password.service";
 import { JwtService } from "./modules/common/jwt/jwt.service";
 
 import { Config } from "./config";
+import { ReceiptService } from "./modules/report/receipt/receipt.service";
+import { ReceiptController } from "./modules/report/receipt/receipt.controller";
+import { ReceiptRouter } from "./modules/report/receipt/receipt.route";
 
 const api = express.Router();
 
@@ -248,6 +251,11 @@ const reportService = new ReportService(
 const reportController = new ReportController(reportService);
 const reportRouter = new ReportRouter(reportController, jwtService);
 
+// init receipt module
+const receiptService = new ReceiptService(prismaService);
+const receiptController = new ReceiptController(receiptService);
+const receiptRouter = new ReceiptRouter(receiptController, jwtService);
+
 // use routers
 api.use("/app/branch", branchRouter.router);
 api.use("/app/user", userRouter.router);
@@ -267,5 +275,6 @@ api.use("/transaction/transfer", transferRouter.router);
 api.use("/transaction/adjust-stock", adjustStockRouter.router);
 api.use("/overview", overviewRouter.router);
 api.use("/report", reportRouter.router);
+api.use("/report/receipt", receiptRouter.router);
 
 export default api;
