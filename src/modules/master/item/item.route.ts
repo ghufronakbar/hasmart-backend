@@ -8,6 +8,7 @@ import {
   ItemParamsSchema,
   GetItemByCodeParamsSchema,
   ItemQuerySchema,
+  ItemBulkUpdateVariantPriceBodySchema,
 } from "./item.validator";
 import { useFilter } from "../../../middleware/use-filter";
 import { useAuth } from "../../../middleware/use-auth";
@@ -84,6 +85,17 @@ export class ItemRouter extends BaseRouter {
       validateHandler({ params: GetItemByCodeParamsSchema }),
       asyncHandler(
         async (req, res) => await this.controller.getItemByCode(req, res),
+      ),
+    );
+
+    // PATCH /api/master/item/bulk-variant-price
+    this.router.patch(
+      "/bulk-variant-price",
+      useAuth(this.jwtService),
+      validateHandler({ body: ItemBulkUpdateVariantPriceBodySchema }),
+      asyncHandler(
+        async (req, res) =>
+          await this.controller.bulkUpdateVariantPrice(req, res),
       ),
     );
   }

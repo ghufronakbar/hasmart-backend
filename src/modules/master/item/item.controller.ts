@@ -7,6 +7,7 @@ import {
   ItemParamsType,
   GetItemByCodeParamsType,
   ItemQueryType,
+  ItemBulkUpdateVariantPriceBodyType,
 } from "./item.validator";
 
 export class ItemController extends BaseController {
@@ -63,6 +64,12 @@ export class ItemController extends BaseController {
   getItemByCode = async (req: Request, res: Response) => {
     const params = req.params as unknown as GetItemByCodeParamsType;
     const result = await this.service.getItemByCode(params.code);
+    return this.sendOk(req, res, result);
+  };
+
+  bulkUpdateVariantPrice = async (req: Request, res: Response) => {
+    const data = req.body as ItemBulkUpdateVariantPriceBodyType;
+    const result = await this.service.bulkUpdateVariantPrice(data);
     return this.sendOk(req, res, result);
   };
 }

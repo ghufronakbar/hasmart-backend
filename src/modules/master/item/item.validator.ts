@@ -115,3 +115,16 @@ export const GetItemByCodeParamsSchema = z.object({
 });
 
 export type GetItemByCodeParamsType = z.infer<typeof GetItemByCodeParamsSchema>;
+
+// BULK UPDATE VARIANT PRICE
+
+export const ItemBulkUpdateVariantPriceBodySchema = z.object({
+  masterItemVariants: z
+    .array(z.number().int().positive())
+    .min(1, "Minimal harus ada 1 variant"),
+  sellPrice: decimalSchema,
+});
+
+export type ItemBulkUpdateVariantPriceBodyType = z.infer<
+  typeof ItemBulkUpdateVariantPriceBodySchema
+>;

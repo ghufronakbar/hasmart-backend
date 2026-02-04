@@ -2,6 +2,7 @@ import { BaseService } from "../../../base/base-service";
 import { PrismaService } from "../../common/prisma/prisma.service";
 import {
   ItemBodyType,
+  ItemBulkUpdateVariantPriceBodyType,
   ItemQueryType,
   ItemUpdateBodyType,
   MasterItemVariantUpdateType,
@@ -524,5 +525,50 @@ export class ItemService extends BaseService {
         },
       },
     });
+  };
+
+  bulkUpdateVariantPrice = async (data: ItemBulkUpdateVariantPriceBodyType) => {
+    const { masterItemVariants, sellPrice } = data;
+
+    const uniqueVariantIds = Array.from(new Set(masterItemVariants));
+
+    if (uniqueVariantIds.length !== masterItemVariants.length) {
+      throw new BadRequestError("Variant ID tidak boleh duplikat");
+    }
+
+    const checkAllVariants = await this.prisma.masterItemVariant.findMany({
+      where: { id: { in: uniqueVariantIds }, deletedAt: null },
+      select: {
+        id: true,
+        masterItemId: true,
+      },
+    });
+
+    if (checkAllVariants.length !== uniqueVariantIds.length) {
+      throw new BadRequestError("Variant ID tidak ditemukan");
+    }
+
+    const uniqueItemIds = Array.from(
+      new Set(checkAllVariants.map((v) => v.masterItemId)),
+    );
+
+    // 2. UPDATE ALL
+    await this.prisma.masterItemVariant.updateMany({
+      where: {
+        id: { in: uniqueVariantIds },
+      },
+      data: {
+        sellPrice: sellPrice,
+      },
+    });
+
+    // 3. Trigger Refresh Logic
+    await Promise.all(
+      uniqueItemIds.map((id) =>
+        this.refreshBuyPriceService.refreshBuyPrice(id),
+      ),
+    );
+
+    return true;
   };
 }
