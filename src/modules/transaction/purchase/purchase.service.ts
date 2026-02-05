@@ -246,12 +246,17 @@ export class PurchaseService extends BaseService {
       throw new BadRequestError("Setiap item variant harus unique");
     }
 
-    // Validate supplier exists
+    // Validate supplier exists by code
     const supplier = await this.prisma.masterSupplier.findFirst({
-      where: { id: data.masterSupplierId, deletedAt: null },
+      where: {
+        code: { equals: data.masterSupplierCode, mode: "insensitive" },
+        deletedAt: null,
+      },
     });
     if (!supplier) {
-      throw new BadRequestError("Supplier tidak ditemukan");
+      throw new BadRequestError(
+        `Supplier dengan kode "${data.masterSupplierCode}" tidak ditemukan`,
+      );
     }
 
     // Validate branch exists
@@ -279,7 +284,7 @@ export class PurchaseService extends BaseService {
     // Create variant map for quick lookup
     const variantMap = new Map(variants.map((v) => [v.id, v]));
 
-    return { variantMap };
+    return { variantMap, supplierId: supplier.id };
   }
 
   private calculateItems(
@@ -338,7 +343,7 @@ export class PurchaseService extends BaseService {
   }
 
   createPurchase = async (data: PurchaseBodyType, userId: number) => {
-    const { variantMap } = await this.validateAndPrepare(data);
+    const { variantMap, supplierId } = await this.validateAndPrepare(data);
     const calculatedItems = this.calculateItems(
       data.items,
       variantMap,
@@ -371,7 +376,7 @@ export class PurchaseService extends BaseService {
           transactionDate: data.transactionDate,
           dueDate: data.dueDate,
           notes: data.notes || "",
-          masterSupplierId: data.masterSupplierId,
+          masterSupplierId: supplierId,
           branchId: data.branchId,
           recordedSubTotalAmount,
           recordedDiscountAmount,
@@ -449,7 +454,7 @@ export class PurchaseService extends BaseService {
       throw new NotFoundError();
     }
 
-    const { variantMap } = await this.validateAndPrepare(data);
+    const { variantMap, supplierId } = await this.validateAndPrepare(data);
     const calculatedItems = this.calculateItems(
       data.items,
       variantMap,
@@ -501,7 +506,7 @@ export class PurchaseService extends BaseService {
           transactionDate: data.transactionDate,
           dueDate: data.dueDate,
           notes: data.notes || "",
-          masterSupplierId: data.masterSupplierId,
+          masterSupplierId: supplierId,
           branchId: data.branchId,
           recordedSubTotalAmount,
           recordedDiscountAmount,

@@ -16,7 +16,7 @@ export const PurchaseBodySchema = z.object({
   invoiceNumber: z.string().min(1),
   transactionDate: z.coerce.date(),
   dueDate: z.coerce.date(),
-  masterSupplierId: z.number().int().positive(),
+  masterSupplierCode: z.string().min(1, "Kode supplier wajib"),
   branchId: z.number().int().positive(),
   notes: z.string().optional().default(""),
   taxPercentage: percentageSchema, // CHANGED: Int → Decimal
