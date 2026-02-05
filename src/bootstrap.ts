@@ -109,6 +109,11 @@ import { LabelService } from "./modules/report/label/label.service";
 import { LabelController } from "./modules/report/label/label.controller";
 import { LabelRouter } from "./modules/report/label/label.route";
 
+// Front Stock Module
+import { FrontStockService } from "./modules/stock/front-stock/front-stock.service";
+import { FrontStockController } from "./modules/stock/front-stock/front-stock.controller";
+import { FrontStockRouter } from "./modules/stock/front-stock/front-stock.route";
+
 const api = express.Router();
 
 // init config
@@ -264,6 +269,14 @@ const labelService = new LabelService(prismaService);
 const labelController = new LabelController(labelService);
 const labelRouter = new LabelRouter(labelController, jwtService);
 
+// init front-stock module
+const frontStockService = new FrontStockService(
+  prismaService,
+  refreshStockService,
+);
+const frontStockController = new FrontStockController(frontStockService);
+const frontStockRouter = new FrontStockRouter(frontStockController, jwtService);
+
 // use routers
 api.use("/app/branch", branchRouter.router);
 api.use("/app/user", userRouter.router);
@@ -285,5 +298,6 @@ api.use("/overview", overviewRouter.router);
 api.use("/report", reportRouter.router);
 api.use("/report/receipt", receiptRouter.router);
 api.use("/report/label", labelRouter.router);
+api.use("/stock/front-stock", frontStockRouter.router);
 
 export default api;

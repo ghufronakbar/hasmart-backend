@@ -38,11 +38,12 @@ model Branch {
   transactionSellReturns     TransactionSellReturn[]
   transactionTransfersFroms  TransactionTransfer[]       @relation("FromTransfer")
   transactionTransferTos     TransactionTransfer[]       @relation("ToTransfer")
+  transactionAdjustments     TransactionAdjustment[]
+  frontStockTransfers        FrontStockTransfer[]
 
-  createdAt              DateTime                @default(now()) @map("created_at")
-  updatedAt              DateTime                @default(now()) @updatedAt @map("updated_at")
-  deletedAt              DateTime?               @map("deleted_at")
-  transactionAdjustments TransactionAdjustment[]
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("branches")
 }
@@ -63,17 +64,19 @@ model User {
   // user take action
   recordActions         RecordAction[]
   itemBuyPriceOverrides ItemBuyPriceOverride[]
+  frontStockTransfers   FrontStockTransfer[]
 
   refreshToken String? @unique @map("refresh_token") @db.Text()
 
   // access general
-  accessOverviewRead      Boolean @default(false) @map("access_overview_read")
-  accessReportRead        Boolean @default(false) @map("access_report_read")
-  accessPointOfSalesRead  Boolean @default(false) @map("access_point_of_sales_read")
-  accessPointOfSalesWrite Boolean @default(false) @map("access_point_of_sales_write")
-  accessPrintLabelRead    Boolean @default(false) @map("access_print_label_read")
-  accessFrontStockRead    Boolean @default(false) @map("access_front_stock_read")
-  accessFrontStockWrite   Boolean @default(false) @map("access_front_stock_write")
+  accessOverviewRead          Boolean @default(false) @map("access_overview_read")
+  accessReportRead            Boolean @default(false) @map("access_report_read")
+  accessPointOfSalesRead      Boolean @default(false) @map("access_point_of_sales_read")
+  accessPointOfSalesWrite     Boolean @default(false) @map("access_point_of_sales_write")
+  accessPrintLabelRead        Boolean @default(false) @map("access_print_label_read")
+  accessFrontStockRead        Boolean @default(false) @map("access_front_stock_read")
+  accessFrontStockWrite       Boolean @default(false) @map("access_front_stock_write")
+  accessFrontStockHistoryRead Boolean @default(false) @map("access_front_stock_history_read")
 
   // access app
   accessAppUserRead    Boolean @default(false) @map("access_app_user_read")
@@ -179,6 +182,9 @@ model MasterItem {
   // override stock
   itemBuyPriceOverrides ItemBuyPriceOverride[]
 
+  // track front stock transfer
+  frontStockTransferItems FrontStockTransferItem[]
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
@@ -191,7 +197,10 @@ model ItemBranch {
   id Int @id @default(autoincrement()) @map("id")
 
   // recorded (from transaction)
-  recordedStock Int @map("recorded_stock")
+  recordedStock      Int @map("recorded_stock")
+  recordedFrontStock Int @map("recorded_front_stock")
+  // tidak berpengaruh dengan recordedStock (stock belakang), hanya sebagai display di kasir
+  // affected by transaction sales & transaction sales return (sell tidak karena, stock belakang)
 
   // pivot
   masterItemId Int        @map("master_item_id")
@@ -205,6 +214,51 @@ model ItemBranch {
 
   @@unique([masterItemId, branchId])
   @@map("item_branches")
+}
+
+model FrontStockTransfer {
+  id Int @id @default(autoincrement()) @map("id")
+
+  notes                   String                   @default("") @map("notes")
+  frontStockTransferItems FrontStockTransferItem[]
+
+  // branch
+  branchId Int    @map("branch_id")
+  branch   Branch @relation(fields: [branchId], references: [id])
+
+  // actioner
+  userId Int  @map("user_id")
+  user   User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("front_stock_transfers")
+}
+
+model FrontStockTransferItem {
+  id Int @id @default(autoincrement()) @map("id")
+
+  amount             Int @map("amount") // dalam satuan variant
+  totalAmount        Int @map("total_amount") // dalam satuan 1
+  recordedConversion Int @map("recorded_conversion") // semisal 12
+  // ex: amount 1, totalAmount 12, recordedConversion 12 -> 1 Pack
+
+  frontStockTransferId Int                @map("front_stock_transfer_id")
+  frontStockTransfer   FrontStockTransfer @relation(fields: [frontStockTransferId], references: [id])
+
+  masterItemId Int        @map("master_item_id")
+  masterItem   MasterItem @relation(fields: [masterItemId], references: [id])
+
+  masterVariantId Int               @map("master_variant_id")
+  masterVariant   MasterItemVariant @relation(fields: [masterVariantId], references: [id])
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("front_stock_transfer_items")
 }
 
 model MasterItemVariant {
@@ -242,6 +296,9 @@ model MasterItemVariant {
 
   // track adjustment
   transactionAdjustments TransactionAdjustment[]
+
+  // track front stock transfer
+  frontStockTransferItems FrontStockTransferItem[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")

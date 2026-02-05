@@ -26,6 +26,7 @@ const UserAccessSchema = z.object({
   accessPrintLabelRead: z.boolean().default(false),
   accessFrontStockRead: z.boolean().default(false),
   accessFrontStockWrite: z.boolean().default(false),
+  accessFrontStockHistoryRead: z.boolean().default(false),
   accessAppUserRead: z.boolean().default(false),
   accessAppUserWrite: z.boolean().default(false),
   accessAppBranchWrite: z.boolean().default(false),

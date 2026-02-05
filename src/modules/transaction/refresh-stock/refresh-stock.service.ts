@@ -195,6 +195,85 @@ export class RefreshStockService extends BaseService {
         masterItemId: masterItemId,
         branchId: branchId,
         recordedStock: finalStock,
+        recordedFrontStock: 0,
+      },
+    });
+
+    return updatedItemBranch;
+  };
+
+  refreshFrontStock = async (branchId: number, masterItemId: number) => {
+    const [sales, salesReturns, frontStockTransfers] = await Promise.all([
+      // 1. Total Penjualan POS (-)
+      this.prisma.transactionSalesItem.aggregate({
+        _sum: { totalQty: true },
+        where: {
+          masterItemId: masterItemId,
+          deletedAt: null,
+          transactionSales: {
+            branchId: branchId,
+            deletedAt: null,
+          },
+        },
+      }),
+
+      // 2. Total Retur Penjualan POS (+)
+      this.prisma.transactionSalesReturnItem.aggregate({
+        _sum: { totalQty: true },
+        where: {
+          masterItemId: masterItemId,
+          deletedAt: null,
+          transactionSalesReturn: {
+            branchId: branchId,
+            deletedAt: null,
+          },
+        },
+      }),
+
+      // 3. Total Transfer (+/-)
+      this.prisma.frontStockTransferItem.aggregate({
+        _sum: { totalAmount: true },
+        where: {
+          masterItemId: masterItemId,
+          deletedAt: null,
+          frontStockTransfer: {
+            branchId: branchId,
+            deletedAt: null,
+          },
+        },
+      }),
+    ]);
+
+    // Ekstrak nilai (handle null jika tidak ada data)
+    const totalSales = sales._sum.totalQty ?? 0;
+    const totalSalesReturn = salesReturns._sum.totalQty ?? 0;
+    const totalFrontStockTransfer = frontStockTransfers._sum.totalAmount ?? 0; // bisa minus atau plus
+
+    // Rumus Stok Akhir
+    // Masuk (IN):
+    // - Sales Return (POS)
+
+    // Keluar (OUT):
+    // - Sales (POS)
+
+    const finalStock = totalSalesReturn - totalSales + totalFrontStockTransfer;
+
+    // Update ke ItemBranch (Gunakan Upsert untuk jaga-jaga jika record belum ada)
+    const updatedItemBranch = await this.prisma.itemBranch.upsert({
+      where: {
+        masterItemId_branchId: {
+          masterItemId: masterItemId,
+          branchId: branchId,
+        },
+      },
+      update: {
+        recordedFrontStock: finalStock,
+      },
+      create: {
+        masterItemId: masterItemId,
+        branchId: branchId,
+        recordedStock: 0,
+        recordedFrontStock: finalStock,
       },
     });
 

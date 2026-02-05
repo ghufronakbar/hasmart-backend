@@ -412,11 +412,14 @@ export class SalesService extends BaseService {
     const uniqueItemIds = [
       ...new Set(calculatedItems.map((i) => i.masterItemId)),
     ];
-    await Promise.all(
-      uniqueItemIds.map((itemId) =>
+    await Promise.all([
+      ...uniqueItemIds.map((itemId) =>
         this.refreshStockService.refreshRealStock(data.branchId, itemId),
       ),
-    );
+      ...uniqueItemIds.map((itemId) =>
+        this.refreshStockService.refreshFrontStock(data.branchId, itemId),
+      ),
+    ]);
 
     return this.getSalesById(sales.id);
   };
@@ -527,19 +530,25 @@ export class SalesService extends BaseService {
     // Refresh stock for all affected items (old + new)
     const newItemIds = calculatedItems.map((i) => i.masterItemId);
     const allItemIds = [...new Set([...oldItemIds, ...newItemIds])];
-    await Promise.all(
-      allItemIds.map((itemId) =>
+    await Promise.all([
+      ...allItemIds.map((itemId) =>
         this.refreshStockService.refreshRealStock(data.branchId, itemId),
       ),
-    );
+      ...allItemIds.map((itemId) =>
+        this.refreshStockService.refreshFrontStock(data.branchId, itemId),
+      ),
+    ]);
 
     // Also refresh old branch if changed
     if (existing.branchId !== data.branchId) {
-      await Promise.all(
-        oldItemIds.map((itemId) =>
+      await Promise.all([
+        ...oldItemIds.map((itemId) =>
           this.refreshStockService.refreshRealStock(existing.branchId, itemId),
         ),
-      );
+        ...oldItemIds.map((itemId) =>
+          this.refreshStockService.refreshFrontStock(existing.branchId, itemId),
+        ),
+      ]);
     }
 
     return this.getSalesById(sales.id);
@@ -579,11 +588,14 @@ export class SalesService extends BaseService {
     // Refresh stock for all items
     const itemIds = existing.transactionSalesItems.map((i) => i.masterItemId);
     const uniqueItemIds = [...new Set(itemIds)];
-    await Promise.all(
-      uniqueItemIds.map((itemId) =>
+    await Promise.all([
+      ...uniqueItemIds.map((itemId) =>
         this.refreshStockService.refreshRealStock(existing.branchId, itemId),
       ),
-    );
+      ...uniqueItemIds.map((itemId) =>
+        this.refreshStockService.refreshFrontStock(existing.branchId, itemId),
+      ),
+    ]);
 
     return deleted;
   };
