@@ -65,6 +65,7 @@ export class FrontStockService extends BaseService {
           select: {
             id: true,
             recordedFrontStock: true,
+            recordedStock: true,
           },
           take: 1,
         },
@@ -81,6 +82,9 @@ export class FrontStockService extends BaseService {
     if (filter?.sortBy === "frontStock") {
       return undefined;
     }
+    if (filter?.sortBy === "rearStock") {
+      return undefined;
+    }
     return filter?.sortBy ? { [filter?.sortBy]: filter?.sort } : { id: "desc" };
   }
 
@@ -89,7 +93,7 @@ export class FrontStockService extends BaseService {
     filter?: FilterQueryType,
   ): Promise<{ rows: ItemFrontStockResponse[]; pagination: Pagination }> => {
     // Use raw SQL for frontStock sorting since it's in a related table
-    if (filter?.sortBy === "frontStock") {
+    if (filter?.sortBy === "frontStock" || filter?.sortBy === "rearStock") {
       return this.getAllItemWithFrontStockRaw(params, filter);
     }
 
@@ -107,7 +111,7 @@ export class FrontStockService extends BaseService {
     });
 
     const cRows = rows as unknown as (MasterItem & {
-      itemBranches: { recordedFrontStock: number }[];
+      itemBranches: { recordedFrontStock: number; recordedStock: number }[];
       masterItemVariants: MasterItemVariant[];
     })[];
 
@@ -117,6 +121,9 @@ export class FrontStockService extends BaseService {
         name: item.name,
         code: item.code,
         frontStock: item.itemBranches?.[0]?.recordedFrontStock || 0,
+        rearStock:
+          (item.itemBranches?.[0]?.recordedStock || 0) -
+          (item.itemBranches?.[0]?.recordedFrontStock || 0),
         variants: item.masterItemVariants,
       };
     });
@@ -147,20 +154,26 @@ export class FrontStockService extends BaseService {
         name: string;
         code: string;
         front_stock: number;
+        rear_stock: number;
       }>
     >`
       SELECT 
         mi.id,
         mi.name,
         mi.code,
-        COALESCE(ib.recorded_front_stock, 0) as front_stock
+        COALESCE(ib.recorded_front_stock, 0) as front_stock,
+        (COALESCE(ib.recorded_stock, 0) - COALESCE(ib.recorded_front_stock, 0)) as rear_stock
       FROM master_items mi
       LEFT JOIN item_branches ib ON ib.master_item_id = mi.id 
         AND ib.branch_id = ${branchId} 
         AND ib.deleted_at IS NULL
       WHERE mi.deleted_at IS NULL
         AND (${searchPattern}::text IS NULL OR mi.name ILIKE ${searchPattern} OR mi.code ILIKE ${searchPattern})
-      ORDER BY front_stock ${sortOrder}, mi.id DESC
+      ORDER BY ${
+        filter?.sortBy === "rearStock"
+          ? Prisma.sql`rear_stock`
+          : Prisma.sql`front_stock`
+      } ${sortOrder}, mi.id DESC
       LIMIT ${limit} OFFSET ${offset}
     `;
 
@@ -189,6 +202,7 @@ export class FrontStockService extends BaseService {
       name: item.name,
       code: item.code,
       frontStock: item.front_stock,
+      rearStock: item.rear_stock,
       variants: variants.filter((v) => v.masterItemId === item.id),
     }));
 

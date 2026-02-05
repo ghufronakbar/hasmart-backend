@@ -12,6 +12,7 @@ export interface ItemFrontStockResponse {
   name: string; // master item name
   code: string; // master item code
   frontStock: number;
+  rearStock: number;
   variants: MasterItemVariant[];
 }
 

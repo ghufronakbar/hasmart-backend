@@ -24,7 +24,7 @@ export class FrontStockRouter extends BaseRouter {
     this.router.get(
       "/item",
       useAuth(this.jwtService),
-      useFilter(["name", "code", "frontStock"]),
+      useFilter(["name", "code", "frontStock", "rearStock"]),
       validateHandler({ query: FrontStockParamsSchema }),
       asyncHandler(
         async (req, res) =>
