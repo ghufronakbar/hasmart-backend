@@ -67,7 +67,7 @@ export class BackupRestoreController extends BaseController {
 
     try {
       await this.service.restoreSqlDumpFromFilePath(dumpPath);
-      return res.json({ message: "Restore success" });
+      return this.sendOk(req, res, { message: "Restore success" });
     } finally {
       // kalau file berasal dari tmp buatan kita, hapus
       // (kalau diskStorage kamu simpan di tmp juga, tetap aman)

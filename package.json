@@ -6,8 +6,6 @@
   "scripts": {
     "start": "node dist/index.js",
     "dev": "ts-node-dev --respawn --transpile-only --exit-child ./src/index.ts",
-    "test:sign:ninja": "ts-node-dev --respawn --transpile-only --exit-child ./test/test-ninja.ts",
-    "test:sign:pdf-lib": "ts-node-dev --respawn --transpile-only --exit-child ./test/test-pdf-lib.ts",
     "postinstall": "prisma generate",
     "build": "tsc --project tsconfig.json",
     "gen:module": "node scripts/generate-module.js",

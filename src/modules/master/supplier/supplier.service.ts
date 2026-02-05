@@ -17,10 +17,10 @@ export class SupplierService extends BaseService {
       deletedAt: null,
       OR: filter?.search
         ? [
-            { name: { contains: filter.search, mode: "insensitive" } },
-            { code: { contains: filter.search, mode: "insensitive" } },
-            { phone: { contains: filter.search, mode: "insensitive" } },
-            { email: { contains: filter.search, mode: "insensitive" } },
+            { name: { startsWith: filter.search, mode: "insensitive" } },
+            { code: { startsWith: filter.search, mode: "insensitive" } },
+            { phone: { startsWith: filter.search, mode: "insensitive" } },
+            { email: { startsWith: filter.search, mode: "insensitive" } },
           ]
         : undefined,
     };

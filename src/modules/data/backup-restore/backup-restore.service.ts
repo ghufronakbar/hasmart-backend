@@ -247,7 +247,7 @@ export class BackupRestoreService {
     // psql execute script ke DB target
     const psqlProc = spawn(psqlBin, [
       "--dbname",
-      this.databaseUrl,
+      this.getCleanDatabaseUrl(),
       "--set",
       "ON_ERROR_STOP=on",
     ]);
@@ -279,6 +279,16 @@ export class BackupRestoreService {
     if (rcPsql !== 0) throw new Error(`psql failed (${rcPsql}): ${psqlErr}`);
   }
 
+  private getCleanDatabaseUrl(): string {
+    try {
+      const url = new URL(this.databaseUrl);
+      url.search = ""; // Remove ?schema=public etc
+      return url.toString();
+    } catch {
+      return this.databaseUrl;
+    }
+  }
+
   // export *.dump (custom)
   async getBackupSqlDumpFilePath(): Promise<{
     filePath: string;
@@ -300,7 +310,7 @@ export class BackupRestoreService {
       "--file",
       filePath,
       "--dbname",
-      this.databaseUrl,
+      this.getCleanDatabaseUrl(),
     ]);
 
     return { filePath, filename };
@@ -329,7 +339,7 @@ export class BackupRestoreService {
         "--no-privileges",
         "--exit-on-error",
         "--dbname",
-        this.databaseUrl,
+        this.getCleanDatabaseUrl(),
         filePath,
       ]);
 
