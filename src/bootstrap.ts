@@ -114,6 +114,11 @@ import { FrontStockService } from "./modules/stock/front-stock/front-stock.servi
 import { FrontStockController } from "./modules/stock/front-stock/front-stock.controller";
 import { FrontStockRouter } from "./modules/stock/front-stock/front-stock.route";
 
+// Backup Restore Module
+import { BackupRestoreRouter } from "./modules/data/backup-restore/backup-restore.route";
+import { BackupRestoreService } from "./modules/data/backup-restore/backup-restore.service";
+import { BackupRestoreController } from "./modules/data/backup-restore/backup-restore.controller";
+
 const api = express.Router();
 
 // init config
@@ -277,6 +282,16 @@ const frontStockService = new FrontStockService(
 const frontStockController = new FrontStockController(frontStockService);
 const frontStockRouter = new FrontStockRouter(frontStockController, jwtService);
 
+// init backup-restore module
+const backupRestoreService = new BackupRestoreService(cfg, prismaService);
+const backupRestoreController = new BackupRestoreController(
+  backupRestoreService,
+);
+const backupRestoreRouter = new BackupRestoreRouter(
+  backupRestoreController,
+  jwtService,
+);
+
 // use routers
 api.use("/app/branch", branchRouter.router);
 api.use("/app/user", userRouter.router);
@@ -299,5 +314,6 @@ api.use("/report", reportRouter.router);
 api.use("/report/receipt", receiptRouter.router);
 api.use("/report/label", labelRouter.router);
 api.use("/stock/front-stock", frontStockRouter.router);
+api.use("/data", backupRestoreRouter.router);
 
 export default api;
