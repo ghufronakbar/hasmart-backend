@@ -17,8 +17,8 @@ export class ItemCategoryService extends BaseService {
       deletedAt: null,
       OR: filter?.search
         ? [
-            { name: { contains: filter.search, mode: "insensitive" } },
-            { code: { contains: filter.search, mode: "insensitive" } },
+            { name: { startsWith: filter.search, mode: "insensitive" } },
+            { code: { startsWith: filter.search, mode: "insensitive" } },
           ]
         : undefined,
     };

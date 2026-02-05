@@ -217,7 +217,10 @@ export class ItemService extends BaseService {
   createItem = async (data: ItemBodyType) => {
     // Validate supplier exists
     const supplier = await this.prisma.masterSupplier.findFirst({
-      where: { id: data.masterSupplierId, deletedAt: null },
+      where: {
+        code: { equals: data.masterSupplierCode, mode: "insensitive" },
+        deletedAt: null,
+      },
     });
     if (!supplier) {
       throw new BadRequestError("Supplier tidak ditemukan");
@@ -241,7 +244,10 @@ export class ItemService extends BaseService {
 
     // Validate category exists
     const category = await this.prisma.masterItemCategory.findFirst({
-      where: { id: data.masterItemCategoryId, deletedAt: null },
+      where: {
+        code: { equals: data.masterItemCategoryCode, mode: "insensitive" },
+        deletedAt: null,
+      },
     });
     if (!category) {
       throw new BadRequestError("Kategori tidak ditemukan");
@@ -265,8 +271,8 @@ export class ItemService extends BaseService {
           where: { id: existingItem.id },
           data: {
             name: data.name,
-            masterSupplierId: data.masterSupplierId,
-            masterItemCategoryId: data.masterItemCategoryId,
+            masterSupplierId: supplier.id,
+            masterItemCategoryId: category.id,
             isActive: data.isActive,
             deletedAt: null,
           },
@@ -292,8 +298,8 @@ export class ItemService extends BaseService {
           data: {
             name: data.name,
             code: upperCode,
-            masterSupplierId: data.masterSupplierId,
-            masterItemCategoryId: data.masterItemCategoryId,
+            masterSupplierId: supplier.id,
+            masterItemCategoryId: category.id,
             isActive: data.isActive,
             recordedBuyPrice: 0,
             masterItemVariants: {
@@ -365,13 +371,19 @@ export class ItemService extends BaseService {
     // Validate supplier exists
     const [supplier, category] = await Promise.all([
       this.prisma.masterSupplier.findFirst({
-        where: { id: data.masterSupplierId, deletedAt: null },
+        where: {
+          code: { equals: data.masterSupplierCode, mode: "insensitive" },
+          deletedAt: null,
+        },
         select: {
           id: true,
         },
       }),
       this.prisma.masterItemCategory.findFirst({
-        where: { id: data.masterItemCategoryId, deletedAt: null },
+        where: {
+          code: { equals: data.masterItemCategoryCode, mode: "insensitive" },
+          deletedAt: null,
+        },
         select: {
           id: true,
         },
@@ -431,8 +443,8 @@ export class ItemService extends BaseService {
         where: { id },
         data: {
           name: data.name,
-          masterSupplierId: data.masterSupplierId,
-          masterItemCategoryId: data.masterItemCategoryId,
+          masterSupplierId: supplier.id,
+          masterItemCategoryId: category.id,
           isActive: data.isActive,
         },
       });

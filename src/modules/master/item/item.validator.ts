@@ -6,8 +6,8 @@ import { decimalSchema } from "../../../utils/decimal.utils";
 export const ItemBodySchema = z.object({
   name: z.string().min(1),
   code: z.string().min(1),
-  masterSupplierId: z.number().int().positive(),
-  masterItemCategoryId: z.number().int().positive(),
+  masterSupplierCode: z.string().min(1),
+  masterItemCategoryCode: z.string().min(1),
   isActive: z.boolean().default(true),
   masterItemVariants: z
     .array(
@@ -52,8 +52,8 @@ export type MasterItemVariantUpdateType = z.infer<
 
 export const ItemUpdateBodySchema = z.object({
   name: z.string().min(1),
-  masterSupplierId: z.number().int().positive(),
-  masterItemCategoryId: z.number().int().positive(),
+  masterSupplierCode: z.string().min(1),
+  masterItemCategoryCode: z.string().min(1),
   isActive: z.boolean(),
   buyPrice: decimalSchema,
   masterItemVariants: z
