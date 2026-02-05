@@ -32,6 +32,8 @@ export class ReceiptService extends BaseService {
           recordedSubTotalAmount: true,
           recordedTotalAmount: true,
           transactionDate: true,
+          cashReceived: true,
+          cashChange: true,
           transactionSalesItems: {
             select: {
               recordedDiscountAmount: true,
@@ -111,9 +113,8 @@ export class ReceiptService extends BaseService {
       showTax: false,
       subTotal: receipt.recordedSubTotalAmount.toString(),
       totalAmount: receipt.recordedTotalAmount.toString(),
-      // TODO: belum ada
-      payAmount: "0",
-      changeAmount: "0",
+      payAmount: receipt.cashReceived.toString(),
+      changeAmount: receipt.cashChange.toString(),
       transactionDate: receipt.transactionDate,
     };
   };
@@ -210,7 +211,7 @@ export class ReceiptService extends BaseService {
       subTotal: receipt.recordedSubTotalAmount.toString(),
       totalAmount: receipt.recordedTotalAmount.toString(),
       payAmount: receipt.recordedTotalAmount.toString(),
-      // TODO: belum ada atau expected uang pas karena b2b
+      // NOTE: expected uang pas karena b2b
       changeAmount: "0",
       transactionDate: receipt.transactionDate,
     };
