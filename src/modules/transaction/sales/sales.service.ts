@@ -343,6 +343,12 @@ export class SalesService extends BaseService {
       recordedDiscountAmount,
     );
 
+    const cashChange = data.cashReceived.sub(recordedTotalAmount);
+
+    if (cashChange.lt(0)) {
+      throw new BadRequestError("Uang yang diterima kurang");
+    }
+
     // Generate invoice number
     const invoiceNumber = await this.generateInvoiceNumber(data.branchId);
 
@@ -354,6 +360,8 @@ export class SalesService extends BaseService {
           notes: data.notes || "",
           masterMemberId: memberId,
           branchId: data.branchId,
+          cashReceived: data.cashReceived,
+          cashChange,
           recordedSubTotalAmount,
           recordedDiscountAmount,
           recordedTotalAmount,
@@ -438,6 +446,12 @@ export class SalesService extends BaseService {
       recordedDiscountAmount,
     );
 
+    const cashChange = data.cashReceived.sub(recordedTotalAmount);
+
+    if (cashChange.lt(0)) {
+      throw new BadRequestError("Uang yang diterima kurang");
+    }
+
     // Get old item IDs for stock refresh
     const oldItemIds = existing.transactionSalesItems.map(
       (i) => i.masterItemId,
@@ -467,6 +481,8 @@ export class SalesService extends BaseService {
           recordedSubTotalAmount,
           recordedDiscountAmount,
           recordedTotalAmount,
+          cashReceived: data.cashReceived,
+          cashChange,
           transactionSalesItems: {
             create: calculatedItems.map((item) => ({
               masterItemId: item.masterItemId,

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { percentageSchema } from "../../../utils/decimal.utils";
+import { decimalSchema, percentageSchema } from "../../../utils/decimal.utils";
 
 const SalesDiscountSchema = z.object({
   percentage: percentageSchema, // CHANGED: Int → Decimal
@@ -15,6 +15,7 @@ export const SalesBodySchema = z.object({
   branchId: z.number().int().positive(),
   notes: z.string().optional().default(""),
   memberCode: z.string().optional().nullable(),
+  cashReceived: decimalSchema,
   items: z.array(SalesItemSchema).min(1, "Minimal harus ada 1 item"),
 });
 

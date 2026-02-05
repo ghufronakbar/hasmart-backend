@@ -518,6 +518,10 @@ model TransactionSales {
   invoiceNumber String @unique @map("invoice_number") // ex: TS-2026-001 (ref number, generated)
   notes         String @default("") @map("notes") @db.Text()
 
+  // cash
+  cashReceived Decimal @map("cash_received") @db.Decimal(18, 2)
+  cashChange   Decimal @map("cash_change") @db.Decimal(18, 2)
+
   // recorded
   recordedSubTotalAmount Decimal @map("recorded_sub_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari amount setiap item
   recordedDiscountAmount Decimal @map("recorded_discount_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari setiap item discount
