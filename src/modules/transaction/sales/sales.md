@@ -83,6 +83,7 @@ Authorization: Bearer <token>
   "branchId": 1,
   "notes": "Customer minta bon kosong",
   "memberCode": "MBR001",
+  "cashReceived": 100000,
   "items": [
     {
       "masterItemVariantId": 5,
