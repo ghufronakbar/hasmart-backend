@@ -25,7 +25,9 @@ import { Transform } from "node:stream";
 
 import { Config } from "../../../config";
 import { PrismaService } from "../../common/prisma/prisma.service";
-import { ValidationError } from "../../../utils/error";
+import { ForbiddenError, ValidationError } from "../../../utils/error";
+import { JwtService } from "../../common/jwt/jwt.service";
+import { PasswordService } from "../../common/password/password.service";
 
 type RunResult = { stdout: string; stderr: string; code: number };
 
@@ -113,6 +115,8 @@ export class BackupRestoreService {
   constructor(
     private readonly cfg: Config,
     private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+    private readonly passwordService: PasswordService,
   ) {}
 
   private get databaseUrl() {
@@ -317,7 +321,38 @@ export class BackupRestoreService {
   }
 
   // restore from *.dump (path on disk)
-  async restoreSqlDumpFromFilePath(filePath: string) {
+  async restoreSqlDumpFromFilePath(filePath: string, headerAuth?: string) {
+    const countUser = await this.prisma.user.count();
+    // jika ada user maka cek, harus super user
+    if (countUser > 0) {
+      let token = headerAuth || "";
+      if (token.startsWith("Bearer ")) {
+        token = token.slice(7);
+      }
+      const verify = await this.jwtService.verifyAccess(token);
+      if (!verify) {
+        throw new ForbiddenError(
+          "Hanya super user yang dapat restore database",
+        );
+      }
+      const user = await this.prisma.user.findUnique({
+        where: {
+          id: verify.userId,
+        },
+      });
+      if (!user) {
+        throw new ForbiddenError(
+          "Hanya super user yang dapat restore database",
+        );
+      }
+      if (!user.isSuperUser) {
+        throw new ForbiddenError(
+          "Hanya super user yang dapat restore database",
+        );
+      }
+    }
+    // jika tidak ada user maka tidak perlu cek (bisa restore di first time setup)
+
     const serverMajor = await this.getServerMajorVersion();
 
     const pgRestore = await this.resolvePgTool("pg_restore", serverMajor);
@@ -342,6 +377,21 @@ export class BackupRestoreService {
         this.getCleanDatabaseUrl(),
         filePath,
       ]);
+
+      // setelah restore, jika user ada, maka update menjadi default untuk super user
+      const hashedPassword = await this.passwordService.hash("12345678");
+      await this.prisma.user.updateMany({
+        where: {
+          isSuperUser: true,
+        },
+        data: {
+          name: "admin",
+          password: hashedPassword,
+          refreshToken: null,
+        },
+      });
+
+      // force logout jika berhasil di client
 
       return { message: "Restore success", filtered: false };
     } catch (e: any) {

@@ -50,6 +50,8 @@ export class BackupRestoreController extends BaseController {
       throw new ValidationError("File not found");
     }
 
+    const headerAuth = req.headers.authorization;
+
     // Kalau multer kamu diskStorage => ada req.file.path
     // Kalau masih memoryStorage => pakai req.file.buffer, kita tulis dulu ke tmp file.
     let dumpPath: string | undefined = (req.file as any).path;
@@ -66,7 +68,7 @@ export class BackupRestoreController extends BaseController {
     }
 
     try {
-      await this.service.restoreSqlDumpFromFilePath(dumpPath);
+      await this.service.restoreSqlDumpFromFilePath(dumpPath, headerAuth);
       return this.sendOk(req, res, { message: "Restore success" });
     } finally {
       // kalau file berasal dari tmp buatan kita, hapus

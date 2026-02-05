@@ -231,6 +231,9 @@ export class UserService extends BaseService {
 
   // super user create user lain
   createUser = async (data: CreateUserBodyType) => {
+    if (data.name?.toLowerCase() === "admin") {
+      throw new BadRequestError("Username tidak boleh admin");
+    }
     const existingUser = await this.prisma.user.findUnique({
       where: {
         name: data.name?.toLowerCase(),
@@ -341,6 +344,7 @@ export class UserService extends BaseService {
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
       deletedAt: user.deletedAt,
+      isSuperUser: user.isSuperUser,
     };
   };
 

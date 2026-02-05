@@ -283,7 +283,12 @@ const frontStockController = new FrontStockController(frontStockService);
 const frontStockRouter = new FrontStockRouter(frontStockController, jwtService);
 
 // init backup-restore module
-const backupRestoreService = new BackupRestoreService(cfg, prismaService);
+const backupRestoreService = new BackupRestoreService(
+  cfg,
+  prismaService,
+  jwtService,
+  passwordService,
+);
 const backupRestoreController = new BackupRestoreController(
   backupRestoreService,
 );
