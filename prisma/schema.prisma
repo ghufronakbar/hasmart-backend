@@ -64,12 +64,16 @@ model User {
   recordActions         RecordAction[]
   itemBuyPriceOverrides ItemBuyPriceOverride[]
 
-  refreshToken            String? @unique @map("refresh_token") @db.Text()
-  // access overview & pos
+  refreshToken String? @unique @map("refresh_token") @db.Text()
+
+  // access general
   accessOverviewRead      Boolean @default(false) @map("access_overview_read")
   accessReportRead        Boolean @default(false) @map("access_report_read")
   accessPointOfSalesRead  Boolean @default(false) @map("access_point_of_sales_read")
   accessPointOfSalesWrite Boolean @default(false) @map("access_point_of_sales_write")
+  accessPrintLabelRead    Boolean @default(false) @map("access_print_label_read")
+  accessFrontStockRead    Boolean @default(false) @map("access_front_stock_read")
+  accessFrontStockWrite   Boolean @default(false) @map("access_front_stock_write")
 
   // access app
   accessAppUserRead    Boolean @default(false) @map("access_app_user_read")
