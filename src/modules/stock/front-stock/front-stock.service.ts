@@ -77,20 +77,22 @@ export class FrontStockService extends BaseService {
   private constructOrderItem(
     filter?: FilterQueryType,
   ): Prisma.MasterItemOrderByWithRelationInput | undefined {
-    switch (filter?.sortBy) {
-      case "frontStock":
-      // TODO: implement logic
-      default:
-        return filter?.sortBy
-          ? { [filter?.sortBy]: filter?.sort }
-          : { id: "desc" };
+    // frontStock sorting is handled separately via raw SQL
+    if (filter?.sortBy === "frontStock") {
+      return undefined;
     }
+    return filter?.sortBy ? { [filter?.sortBy]: filter?.sort } : { id: "desc" };
   }
 
   getAllItemWithFrontStock = async (
     params: FrontStockParamsType,
     filter?: FilterQueryType,
   ): Promise<{ rows: ItemFrontStockResponse[]; pagination: Pagination }> => {
+    // Use raw SQL for frontStock sorting since it's in a related table
+    if (filter?.sortBy === "frontStock") {
+      return this.getAllItemWithFrontStockRaw(params, filter);
+    }
+
     const [rows, count] = await Promise.all([
       this.prisma.masterItem.findMany(
         this.constructArgsItem(params.branchId, filter),
@@ -107,7 +109,6 @@ export class FrontStockService extends BaseService {
     const cRows = rows as unknown as (MasterItem & {
       itemBranches: { recordedFrontStock: number }[];
       masterItemVariants: MasterItemVariant[];
-      user: User;
     })[];
 
     const data: ItemFrontStockResponse[] = cRows.map((item) => {
@@ -121,6 +122,84 @@ export class FrontStockService extends BaseService {
     });
 
     return { rows: data, pagination };
+  };
+
+  /**
+   * Raw SQL implementation for sorting by frontStock.
+   * Used because frontStock (recordedFrontStock) is in ItemBranch table,
+   * and Prisma doesn't support sorting by fields in related tables directly.
+   */
+  private getAllItemWithFrontStockRaw = async (
+    params: FrontStockParamsType,
+    filter?: FilterQueryType,
+  ): Promise<{ rows: ItemFrontStockResponse[]; pagination: Pagination }> => {
+    const { branchId } = params;
+    const sortOrder =
+      filter?.sort === "asc" ? Prisma.sql`ASC` : Prisma.sql`DESC`;
+    const offset = filter?.skip ?? 0;
+    const limit = filter?.limit ?? 10;
+    const searchPattern = filter?.search ? `%${filter.search}%` : null;
+
+    // Raw query with LEFT JOIN and COALESCE to handle NULL (items without ItemBranch)
+    const rawItems = await this.prisma.$queryRaw<
+      Array<{
+        id: number;
+        name: string;
+        code: string;
+        front_stock: number;
+      }>
+    >`
+      SELECT 
+        mi.id,
+        mi.name,
+        mi.code,
+        COALESCE(ib.recorded_front_stock, 0) as front_stock
+      FROM master_items mi
+      LEFT JOIN item_branches ib ON ib.master_item_id = mi.id 
+        AND ib.branch_id = ${branchId} 
+        AND ib.deleted_at IS NULL
+      WHERE mi.deleted_at IS NULL
+        AND (${searchPattern}::text IS NULL OR mi.name ILIKE ${searchPattern} OR mi.code ILIKE ${searchPattern})
+      ORDER BY front_stock ${sortOrder}, mi.id DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+
+    // Count query
+    const countResult = await this.prisma.$queryRaw<[{ count: bigint }]>`
+      SELECT COUNT(*) as count
+      FROM master_items mi
+      WHERE mi.deleted_at IS NULL
+        AND (${searchPattern}::text IS NULL OR mi.name ILIKE ${searchPattern} OR mi.code ILIKE ${searchPattern})
+    `;
+
+    const total = Number(countResult[0].count);
+
+    // Fetch variants for each item
+    const itemIds = rawItems.map((i) => i.id);
+    const variants =
+      itemIds.length > 0
+        ? await this.prisma.masterItemVariant.findMany({
+            where: { masterItemId: { in: itemIds }, deletedAt: null },
+            orderBy: { amount: "asc" },
+          })
+        : [];
+
+    const data: ItemFrontStockResponse[] = rawItems.map((item) => ({
+      id: item.id,
+      name: item.name,
+      code: item.code,
+      frontStock: item.front_stock,
+      variants: variants.filter((v) => v.masterItemId === item.id),
+    }));
+
+    return {
+      rows: data,
+      pagination: this.createPagination({
+        total,
+        page: filter?.page || 1,
+        limit,
+      }),
+    };
   };
 
   private constructWhereFrontStockTransfer(
