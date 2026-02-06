@@ -89,7 +89,7 @@ export class ReportService extends BaseService {
       })),
     }));
 
-    if (query?.exportAs === "pdf") {
+    if (query?.exportAs === "pdf" || query?.exportAs === "preview") {
       const buffer = await this.pdfService.generatePurchaseReport(items);
       return {
         buffer,
@@ -167,7 +167,7 @@ export class ReportService extends BaseService {
       })),
     }));
 
-    if (query?.exportAs === "pdf") {
+    if (query?.exportAs === "pdf" || query?.exportAs === "preview") {
       const buffer = await this.pdfService.generatePurchaseReturnReport(items);
       return {
         buffer,
@@ -237,7 +237,7 @@ export class ReportService extends BaseService {
       })),
     }));
 
-    if (query?.exportAs === "pdf") {
+    if (query?.exportAs === "pdf" || query?.exportAs === "preview") {
       const buffer = await this.pdfService.generateSalesReport(items);
       return {
         buffer,
@@ -309,7 +309,7 @@ export class ReportService extends BaseService {
       })),
     }));
 
-    if (query?.exportAs === "pdf") {
+    if (query?.exportAs === "pdf" || query?.exportAs === "preview") {
       const buffer = await this.pdfService.generateSalesReturnReport(items);
       return {
         buffer,
@@ -384,7 +384,7 @@ export class ReportService extends BaseService {
       })),
     }));
 
-    if (query?.exportAs === "pdf") {
+    if (query?.exportAs === "pdf" || query?.exportAs === "preview") {
       const buffer = await this.pdfService.generateSellReport(items);
       return {
         buffer,
@@ -458,7 +458,7 @@ export class ReportService extends BaseService {
       })),
     }));
 
-    if (query?.exportAs === "pdf") {
+    if (query?.exportAs === "pdf" || query?.exportAs === "preview") {
       const buffer = await this.pdfService.generateSellReturnReport(items);
       return {
         buffer,
@@ -569,7 +569,7 @@ export class ReportService extends BaseService {
       });
     });
 
-    if (query?.exportAs === "pdf") {
+    if (query?.exportAs === "pdf" || query?.exportAs === "preview") {
       const buffer = await this.pdfService.generateItemReport(reportData);
       return {
         buffer,
@@ -629,7 +629,7 @@ export class ReportService extends BaseService {
       })),
     }));
 
-    if (query.exportAs === "pdf") {
+    if (query.exportAs === "pdf" || query.exportAs === "preview") {
       const buffer = await this.pdfService.generateMemberReport(reportData);
       return {
         buffer,
@@ -729,7 +729,7 @@ export class ReportService extends BaseService {
     // Sort by Total Purchase Amount Descending
     reportData.sort((a, b) => b.totalPurchaseAmount - a.totalPurchaseAmount);
 
-    if (query.exportAs === "pdf") {
+    if (query.exportAs === "pdf" || query.exportAs === "preview") {
       const buffer =
         await this.pdfService.generateMemberPurchaseReport(reportData);
       return {

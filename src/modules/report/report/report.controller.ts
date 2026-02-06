@@ -16,9 +16,10 @@ export class ReportController extends BaseController {
     const result = await this.service.getPurchaseReport(query, filter);
 
     res.setHeader("Content-Type", result.mimeType);
+    const disposition = query.exportAs === "preview" ? "inline" : "attachment";
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=${result.fileName}`,
+      `${disposition}; filename=${result.fileName}`,
     );
     res.send(result.buffer);
   };
@@ -30,9 +31,10 @@ export class ReportController extends BaseController {
     const result = await this.service.getPurchaseReturnReport(query, filter);
 
     res.setHeader("Content-Type", result.mimeType);
+    const disposition = query.exportAs === "preview" ? "inline" : "attachment";
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=${result.fileName}`,
+      `${disposition}; filename=${result.fileName}`,
     );
     res.send(result.buffer);
   };
@@ -44,9 +46,10 @@ export class ReportController extends BaseController {
     const result = await this.service.getSalesReport(query, filter);
 
     res.setHeader("Content-Type", result.mimeType);
+    const disposition = query.exportAs === "preview" ? "inline" : "attachment";
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=${result.fileName}`,
+      `${disposition}; filename=${result.fileName}`,
     );
     res.send(result.buffer);
   };
@@ -58,9 +61,10 @@ export class ReportController extends BaseController {
     const result = await this.service.getSalesReturnReport(query, filter);
 
     res.setHeader("Content-Type", result.mimeType);
+    const disposition = query.exportAs === "preview" ? "inline" : "attachment";
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=${result.fileName}`,
+      `${disposition}; filename=${result.fileName}`,
     );
     res.send(result.buffer);
   };
@@ -72,9 +76,10 @@ export class ReportController extends BaseController {
     const result = await this.service.getSellReport(query, filter);
 
     res.setHeader("Content-Type", result.mimeType);
+    const disposition = query.exportAs === "preview" ? "inline" : "attachment";
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=${result.fileName}`,
+      `${disposition}; filename=${result.fileName}`,
     );
     res.send(result.buffer);
   };
@@ -86,9 +91,10 @@ export class ReportController extends BaseController {
     const result = await this.service.getSellReturnReport(query, filter);
 
     res.setHeader("Content-Type", result.mimeType);
+    const disposition = query.exportAs === "preview" ? "inline" : "attachment";
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=${result.fileName}`,
+      `${disposition}; filename=${result.fileName}`,
     );
     res.send(result.buffer);
   };
@@ -100,9 +106,10 @@ export class ReportController extends BaseController {
     const result = await this.service.getItemReport(query, branchQuery);
 
     res.setHeader("Content-Type", result.mimeType);
+    const disposition = query.exportAs === "preview" ? "inline" : "attachment";
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=${result.fileName}`,
+      `${disposition}; filename=${result.fileName}`,
     );
     res.send(result.buffer);
   };
@@ -114,9 +121,10 @@ export class ReportController extends BaseController {
     const result = await this.service.getMemberReport(query, filter);
 
     res.setHeader("Content-Type", result.mimeType);
+    const disposition = query.exportAs === "preview" ? "inline" : "attachment";
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=${result.fileName}`,
+      `${disposition}; filename=${result.fileName}`,
     );
     res.send(result.buffer);
   };
@@ -128,9 +136,10 @@ export class ReportController extends BaseController {
     const result = await this.service.getMemberPurchaseReport(query, filter);
 
     res.setHeader("Content-Type", result.mimeType);
+    const disposition = query.exportAs === "preview" ? "inline" : "attachment";
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=${result.fileName}`,
+      `${disposition}; filename=${result.fileName}`,
     );
     res.send(result.buffer);
   };

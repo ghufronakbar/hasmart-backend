@@ -15,6 +15,9 @@ export class LabelService extends BaseService {
           in: data.masterItemIds,
         },
       },
+      orderBy: {
+        name: "asc",
+      },
       select: {
         name: true,
         code: true,

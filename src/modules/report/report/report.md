@@ -13,13 +13,13 @@ Because these reports are often accessed via direct links or methods that might 
 
 All endpoints support the following query parameters:
 
-| Parameter     | Type           | Required | Description                                  |
-| :------------ | :------------- | :------- | :------------------------------------------- |
-| `accessToken` | `string`       | **Yes**  | User's JWT Access Token for authentication.  |
-| `exportAs`    | `string`       | **Yes**  | Format of the report. Values: `pdf`, `xlsx`. |
-| `branchId`    | `number`       | No       | Filter transactions by specific branch ID.   |
-| `dateStart`   | `string` (ISO) | No       | Filter start date (e.g., `2024-01-01`).      |
-| `dateEnd`     | `string` (ISO) | No       | Filter end date (e.g., `2024-01-31`).        |
+| Parameter     | Type           | Required | Description                                             |
+| :------------ | :------------- | :------- | :------------------------------------------------------ |
+| `accessToken` | `string`       | **Yes**  | User's JWT Access Token for authentication.             |
+| `exportAs`    | `string`       | **Yes**  | Format of the report. Values: `pdf`, `xlsx`, `preview`. |
+| `branchId`    | `number`       | No       | Filter transactions by specific branch ID.              |
+| `dateStart`   | `string` (ISO) | No       | Filter start date (e.g., `2024-01-01`).                 |
+| `dateEnd`     | `string` (ISO) | No       | Filter end date (e.g., `2024-01-31`).                   |
 
 ### Response
 
@@ -86,6 +86,7 @@ Retrieves a list of B2B sales return transactions.
 - **URL**: `GET /report/sell-return`
 - **Example Request**:
   GET /report/sell-return?exportAs=pdf&accessToken=abc.123.xyz
+
   ```
 
   ```
