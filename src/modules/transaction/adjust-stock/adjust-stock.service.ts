@@ -339,11 +339,14 @@ export class AdjustStockService extends BaseService {
     const uniqueItemIds = [
       ...new Set(calculatedAdjustments.map((a) => a.masterItemId)),
     ];
-    await Promise.all(
-      uniqueItemIds.map((itemId) =>
+    await Promise.all([
+      ...uniqueItemIds.map((itemId) =>
         this.refreshStockService.refreshRealStock(data.branchId, itemId),
       ),
-    );
+      ...uniqueItemIds.map((itemId) =>
+        this.refreshStockService.refreshFrontStock(data.branchId, itemId),
+      ),
+    ]);
 
     // Return all created adjustments
     return Promise.all(
@@ -383,6 +386,10 @@ export class AdjustStockService extends BaseService {
 
     // Refresh stock
     await this.refreshStockService.refreshRealStock(
+      existing.branchId,
+      existing.masterItemId,
+    );
+    await this.refreshStockService.refreshFrontStock(
       existing.branchId,
       existing.masterItemId,
     );
