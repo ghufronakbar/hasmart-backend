@@ -25,6 +25,11 @@ export class LabelService extends BaseService {
           },
           where: {
             deletedAt: null,
+            ...(data.onlyBaseUnit
+              ? {
+                  isBaseUnit: true,
+                }
+              : {}),
           },
         },
       },

@@ -31,6 +31,12 @@ export const LabelQuerySchema = z.object({
     // dedupe + sort (hapus kalau tidak perlu)
     return Array.from(new Set(nums)).sort((a, b) => a - b);
   }),
+  onlyBaseUnit: z
+    .string()
+    .optional()
+    .transform((s) => {
+      return s === "true";
+    }),
 });
 
 export type LabelQueryParamsType = z.infer<typeof LabelQuerySchema>;
