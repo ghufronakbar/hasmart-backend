@@ -1,10 +1,76 @@
-// scripts/seed-item.ts
 import path from "node:path";
 import * as XLSX from "xlsx";
-import { PrismaClient } from "@prisma/client";
+import axios from "axios";
+import * as dotenv from "dotenv";
 
-const prisma = new PrismaClient();
+dotenv.config();
 
+// Configuration
+const BASE_URL = "http://localhost:9999/api";
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "12345678";
+
+// --- Types ---
+interface ApiResponse<T> {
+  data: T;
+  metaData: {
+    code: number;
+    status: string;
+    message: string;
+  };
+}
+
+interface UserLoginResponse {
+  accessToken: string;
+}
+
+interface Branch {
+  id: number;
+  name: string;
+  code: string;
+}
+
+interface Supplier {
+  id: number;
+  code: string;
+  name: string;
+}
+
+interface ItemCategory {
+  id: number;
+  code: string;
+  name: string;
+}
+
+interface Unit {
+  id: number;
+  unit: string;
+  name: string;
+}
+
+interface ItemVariant {
+  id: number;
+  unit: string;
+  amount: number;
+  sellPrice: number;
+  recordedBuyPrice: number;
+  isBaseUnit: boolean;
+}
+
+interface Item {
+  id: number;
+  code: string;
+  name: string;
+  masterSupplierId: number;
+  masterItemCategoryId: number;
+  recordedBuyPrice: number;
+  isActive: boolean;
+  masterItemVariants: ItemVariant[];
+  masterSupplier?: { code: string };
+  masterItemCategory?: { code: string };
+}
+
+// --- Excel Interface ---
 export interface ItemSeed {
   kodeItem: string;
   namaItem: string;
@@ -34,7 +100,6 @@ export interface ItemSeed {
   tipe: string;
 }
 
-// Kolom excel -> field interface
 const COL_MAP: Record<string, keyof ItemSeed> = {
   KodeItem: "kodeItem",
   NamaItem: "namaItem",
@@ -71,18 +136,12 @@ const NUM_FIELDS = new Set<keyof ItemSeed>([
   "stok",
 ]);
 
+// --- Parsing Helpers ---
 function toText(v: unknown): string {
   if (v == null) return "";
   return String(v).trim();
 }
 
-/**
- * Parse angka dari format:
- * - "1,384.92" (comma thousand, dot decimal)
- * - "1.384,92" (dot thousand, comma decimal)
- * - "10.00", "10", "0.00"
- * - "" => null
- */
 function parseNumberSmart(v: unknown): number | null {
   if (v == null) return null;
   if (typeof v === "number") return Number.isFinite(v) ? v : null;
@@ -90,33 +149,26 @@ function parseNumberSmart(v: unknown): number | null {
   let s = String(v).trim();
   if (s === "") return null;
 
-  // Hapus spasi
   s = s.replace(/\s+/g, "");
 
   const hasComma = s.includes(",");
   const hasDot = s.includes(".");
 
   if (hasComma && hasDot) {
-    // Tentukan mana decimal separator dari posisi terakhir
     const lastComma = s.lastIndexOf(",");
     const lastDot = s.lastIndexOf(".");
-
     if (lastDot > lastComma) {
-      // "1,384.92" => remove commas
       s = s.replace(/,/g, "");
     } else {
-      // "1.384,92" => remove dots then comma->dot
       s = s.replace(/\./g, "").replace(/,/g, ".");
     }
   } else if (hasComma && !hasDot) {
-    // Bisa "1,234" (thousand) atau "12,5" (decimal)
     if (/^\d{1,3}(,\d{3})+$/.test(s)) {
       s = s.replace(/,/g, "");
     } else {
       s = s.replace(/,/g, ".");
     }
   } else if (!hasComma && hasDot) {
-    // Bisa "1.234" (thousand) atau "12.5" (decimal)
     if (/^\d{1,3}(\.\d{3})+$/.test(s)) {
       s = s.replace(/\./g, "");
     }
@@ -127,13 +179,11 @@ function parseNumberSmart(v: unknown): number | null {
 }
 
 function readXlsAsItems(filePath: string): ItemSeed[] {
-  // raw:false => ambil nilai "formatted text" (lebih aman untuk KodeItem panjang)
   const wb = XLSX.readFile(filePath, { raw: false });
   const sheetName = wb.SheetNames[0];
   if (!sheetName) throw new Error("Excel tidak punya sheet.");
 
   const ws = wb.Sheets[sheetName];
-  // header:1 => array-of-arrays, supaya kita kontrol mapping + string safety
   const rows = XLSX.utils.sheet_to_json<unknown[]>(ws, {
     header: 1,
     raw: false,
@@ -158,7 +208,6 @@ function readXlsAsItems(filePath: string): ItemSeed[] {
       if (!key) continue;
 
       const cell = row[c];
-
       if (NUM_FIELDS.has(key)) {
         (obj as any)[key] = parseNumberSmart(cell);
       } else {
@@ -166,29 +215,20 @@ function readXlsAsItems(filePath: string): ItemSeed[] {
       }
     }
 
-    // Skip baris kosong
     const kodeItem = (obj.kodeItem ?? "").trim();
     const namaItem = (obj.namaItem ?? "").trim();
     if (!kodeItem && !namaItem) continue;
 
-    // Normalisasi optional: Satuan2 bisa kosong => null
+    // Normalize
     const satuan2 = (obj.satuan2 ?? "").trim();
     obj.satuan2 = satuan2 === "" ? null : satuan2;
-
-    // Pastikan required minimal ada (sesuaikan kebutuhanmu)
-    if (!kodeItem) {
-      throw new Error(`Row ${r + 1}: KodeItem kosong`);
-    }
-    if (!namaItem) {
-      throw new Error(`Row ${r + 1}: NamaItem kosong (KodeItem=${kodeItem})`);
-    }
-
-    // Default untuk field string wajib kalau kosong
     obj.kodeJenis = (obj.kodeJenis ?? "").trim();
     obj.kodePemasok = (obj.kodePemasok ?? "").trim();
     obj.satuan1 = (obj.satuan1 ?? "").trim();
-    obj.upload = (obj.upload ?? "").trim();
-    obj.tipe = (obj.tipe ?? "").trim();
+
+    if (!kodeItem) throw new Error(`Row ${r + 1}: KodeItem kosong`);
+    if (!namaItem)
+      throw new Error(`Row ${r + 1}: NamaItem kosong (KodeItem=${kodeItem})`);
 
     items.push(obj as ItemSeed);
   }
@@ -196,153 +236,301 @@ function readXlsAsItems(filePath: string): ItemSeed[] {
   return items;
 }
 
-// ====== USAGE ======
+// --- API ---
+const api = axios.create({
+  baseURL: BASE_URL,
+});
+
+async function login(): Promise<string> {
+  try {
+    const res = await api.post<ApiResponse<UserLoginResponse>>(
+      "/app/user/login",
+      {
+        name: ADMIN_EMAIL,
+        password: ADMIN_PASSWORD,
+      },
+    );
+    const token = res.data.data.accessToken;
+    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    console.log("Login successful.");
+    return token;
+  } catch (error: any) {
+    if (error.response) {
+      console.error(
+        "Login failed response:",
+        error.response.status,
+        error.response.data,
+      );
+    } else {
+      console.error("Login failed:", error.message);
+    }
+    throw new Error(
+      "Could not login. Ensure API is running and admin user exists.",
+    );
+  }
+}
+
+async function getFirstBranch(): Promise<Branch> {
+  try {
+    const res = await api.get<ApiResponse<Branch[]>>("/app/branch?limit=1");
+    if (res.data.data && res.data.data.length > 0) {
+      return res.data.data[0];
+    }
+    console.log("Creating default 'Pusat' branch...");
+    const createRes = await api.post<ApiResponse<Branch>>("/app/branch", {
+      code: "PUSAT",
+      name: "Hasmart Utama", // Matching original script name
+      address: "Jl Raya Sruwen-Karanggede KM.10 Susukan,Semarang",
+      phone: "081229706622",
+    });
+    return createRes.data.data;
+  } catch (error: any) {
+    console.error("Failed to get/create branch:", error.message);
+    throw error;
+  }
+}
+
+async function getAllSuppliers(): Promise<Supplier[]> {
+  try {
+    const res = await api.get<ApiResponse<Supplier[]>>(
+      "/master/supplier?limit=1000",
+    );
+    return res.data.data || [];
+  } catch {
+    return [];
+  }
+}
+
+async function createSupplier(code: string, name: string): Promise<Supplier> {
+  const res = await api.post<ApiResponse<Supplier>>("/master/supplier", {
+    code,
+    name,
+  });
+  return res.data.data;
+}
+
+async function getAllUnits(): Promise<Unit[]> {
+  try {
+    const res = await api.get<ApiResponse<Unit[]>>("/master/unit?limit=1000");
+    return res.data.data || [];
+  } catch {
+    return [];
+  }
+}
+
+async function createUnit(unitName: string): Promise<Unit> {
+  const res = await api.post<ApiResponse<Unit>>("/master/unit", {
+    unit: unitName,
+    name: unitName,
+  });
+  return res.data.data;
+}
+
+async function getAllCategories(): Promise<ItemCategory[]> {
+  try {
+    const res = await api.get<ApiResponse<ItemCategory[]>>(
+      "/master/item-category?limit=1000",
+    );
+    return res.data.data || [];
+  } catch {
+    return [];
+  }
+}
+
+async function createCategory(
+  code: string,
+  name: string,
+): Promise<ItemCategory> {
+  const res = await api.post<ApiResponse<ItemCategory>>(
+    "/master/item-category",
+    { code, name },
+  );
+  return res.data.data;
+}
+
+async function getItemByCode(code: string): Promise<Item | null> {
+  try {
+    const res = await api.get<ApiResponse<Item>>(`/master/item/code/${code}`);
+    return res.data.data;
+  } catch (error: any) {
+    if (error.response?.status === 404) return null;
+    throw error;
+  }
+}
+
+async function createItem(payload: any): Promise<Item> {
+  const res = await api.post<ApiResponse<Item>>("/master/item", payload);
+  return res.data.data;
+}
+
+// --- Main Script ---
 const xlsPath = path.resolve(process.cwd(), "scripts", "DATAITEMBARANG.xls");
 
-// Ini variable JSON yang kamu minta:
-const seeds = async () => {
-  const itemsJson: ItemSeed[] = readXlsAsItems(xlsPath);
-  // Contoh cek output:
-  //   console.log(`Loaded items: ${itemsJson.length}`);
-  //   console.log(itemsJson[0]);
+const seed = async () => {
+  console.log("Starting Seed Item (API Mode)...");
 
+  // 1. Auth
+  await login();
+
+  // 2. Parse Excel
+  console.log("Reading Excel...");
+  const itemsJson = readXlsAsItems(xlsPath);
+  console.log(`Loaded items from Excel: ${itemsJson.length}`);
+
+  if (itemsJson.length === 0) {
+    console.log("No items found.");
+    return;
+  }
+
+  // 3. Prepare Sets
   const uniqueSupplier = new Set<string>();
   const uniqueUnit = new Set<string>();
   const uniqueCategory = new Set<string>();
 
   itemsJson.forEach((item) => {
-    uniqueSupplier.add(item.kodePemasok);
-    uniqueUnit.add(item.satuan1);
-    if (item.satuan2) {
-      uniqueUnit.add(item.satuan2);
-    }
-    uniqueCategory.add(item.kodeJenis);
+    if (item.kodePemasok) uniqueSupplier.add(item.kodePemasok);
+    if (item.satuan1) uniqueUnit.add(item.satuan1);
+    if (item.satuan2) uniqueUnit.add(item.satuan2);
+    if (item.kodeJenis) uniqueCategory.add(item.kodeJenis);
   });
 
-  await prisma.$transaction(async (tx) => {
-    // create branch
-    const branch = await tx.branch.create({
-      data: {
-        code: "UTAMA",
-        name: "Hasmart Utama",
-        address: "Jl Raya Sruwen-Karanggede KM.10 Susukan,Semarang",
-        phone: "081229706622",
-      },
-    });
+  // 4. Sync Master Data
 
-    const branchId = branch.id;
+  // --- Branch ---
+  const branch = await getFirstBranch();
+  console.log(`Using Branch: ${branch.name}`);
 
-    // create supplier
-    const suppliers = await Promise.all(
-      Array.from(uniqueSupplier).map((code) => {
-        const supplier = tx.masterSupplier.create({
-          data: {
-            code,
-            name: code,
-          },
-        });
-        console.log("Supplier created", supplier);
-        return supplier;
-      }),
-    );
+  // --- Suppliers ---
+  let existingSuppliers = await getAllSuppliers();
+  console.log(`Found ${existingSuppliers.length} existing suppliers.`);
+  for (const code of uniqueSupplier) {
+    if (!existingSuppliers.find((s) => s.code === code)) {
+      console.log(`Creating Supplier: ${code}`);
+      try {
+        const newSupplier = await createSupplier(code, code);
+        existingSuppliers.push(newSupplier);
+      } catch (e: any) {
+        console.error(
+          `Failed create supplier ${code}:`,
+          e.response?.data || e.message,
+        );
+      }
+    }
+  }
 
-    // create unit
-    const units = await Promise.all(
-      Array.from(uniqueUnit).map((code) => {
-        const unit = tx.masterUnit.create({
-          data: {
-            name: code,
-            unit: code,
-          },
-        });
-        console.log("Unit created", unit);
-        return unit;
-      }),
-    );
+  // --- Units ---
+  let existingUnits = await getAllUnits();
+  console.log(`Found ${existingUnits.length} existing units.`);
+  for (const u of uniqueUnit) {
+    if (!u) continue;
+    // Check by unit code/name (they are same in original script)
+    if (!existingUnits.find((ex) => ex.unit === u)) {
+      console.log(`Creating Unit: ${u}`);
+      try {
+        const newUnit = await createUnit(u);
+        existingUnits.push(newUnit);
+      } catch (e: any) {
+        console.error(
+          `Failed create unit ${u}:`,
+          e.response?.data || e.message,
+        );
+      }
+    }
+  }
 
-    // create category
-    const categories = await Promise.all(
-      Array.from(uniqueCategory).map((code) => {
-        const category = tx.masterItemCategory.create({
-          data: {
-            code,
-            name: code,
-          },
-        });
-        console.log("Category created", category);
-        return category;
-      }),
-    );
+  // --- Categories ---
+  let existingCategories = await getAllCategories();
+  console.log(`Found ${existingCategories.length} existing categories.`);
+  for (const code of uniqueCategory) {
+    if (!existingCategories.find((c) => c.code === code)) {
+      console.log(`Creating Category: ${code}`);
+      try {
+        const newCat = await createCategory(code, code);
+        existingCategories.push(newCat);
+      } catch (e: any) {
+        console.error(
+          `Failed create category ${code}:`,
+          e.response?.data || e.message,
+        );
+      }
+    }
+  }
 
-    for await (const item of itemsJson) {
-      const category = categories.find((c) => c.code === item.kodeJenis);
+  // 5. Create Items
+  console.log("Processing Items...");
+
+  for (const item of itemsJson) {
+    try {
+      // Find dependencies
+      const category = existingCategories.find(
+        (c) => c.code === item.kodeJenis,
+      );
       if (!category) {
-        console.log("Category not found", item.kodeJenis);
+        console.warn(
+          `Category not found for item ${item.kodeItem}: ${item.kodeJenis}`,
+        );
         continue;
       }
-      const supplier = suppliers.find((s) => s.code === item.kodePemasok);
+      const supplier = existingSuppliers.find(
+        (s) => s.code === item.kodePemasok,
+      );
       if (!supplier) {
-        console.log("Supplier not found", item.kodePemasok);
+        console.warn(
+          `Supplier not found for item ${item.kodeItem}: ${item.kodePemasok}`,
+        );
         continue;
       }
-      const masterItemVariants = [
+
+      // Check if exists
+      const existingItem = await getItemByCode(item.kodeItem);
+      if (existingItem) {
+        console.log(`Item exists (skip): ${item.kodeItem}`);
+        continue;
+      }
+
+      // Prepare Variants
+      const variants = [
         {
-          amount: item.kuantitas1 || 1,
-          isBaseUnit: item.kuantitas1 === 1,
-          recordedBuyPrice: 0,
-          recordedProfitAmount: 0,
-          recordedProfitPercentage: 0,
-          sellPrice: item.hargaJualEcer1 || 0,
           unit: item.satuan1,
+          amount: item.kuantitas1 || 1, // Defaulting if missing
+          sellPrice: item.hargaJualEcer1 || 0,
         },
       ];
 
-      if (item.satuan2 && item.kuantitas2 && item.hargaJualEcer2) {
-        masterItemVariants.push({
-          amount: item.kuantitas2,
-          isBaseUnit: false,
-          recordedBuyPrice: 0,
-          recordedProfitAmount: 0,
-          recordedProfitPercentage: 0,
-          sellPrice: item.hargaJualEcer2,
+      // Unit 2
+      if (item.satuan2 && item.kuantitas2) {
+        variants.push({
           unit: item.satuan2,
+          amount: item.kuantitas2,
+          sellPrice: item.hargaJualEcer2 || 0,
         });
       }
 
-      const createdItem = await tx.masterItem.create({
-        data: {
-          code: item.kodeItem,
-          isActive: true,
-          name: item.namaItem,
-          recordedBuyPrice: 0,
-          masterItemCategoryId: category.id,
-          masterSupplierId: supplier.id,
-          masterItemVariants: {
-            createMany: {
-              data: masterItemVariants,
-            },
-          },
-        },
-        include: {
-          _count: {
-            select: {
-              masterItemVariants: true,
-            },
-          },
-        },
-      });
+      const payload = {
+        name: item.namaItem,
+        code: item.kodeItem,
+        masterSupplierCode: supplier.code,
+        masterItemCategoryCode: category.code,
+        isActive: true,
+        masterItemVariants: variants,
+      };
 
+      await createItem(payload);
       console.log(
-        "Item created",
-        createdItem.name,
-        "total variant",
-        createdItem._count.masterItemVariants,
+        `Item created: ${item.namaItem} (${variants.length} variants)`,
+      );
+    } catch (e: any) {
+      console.error(
+        `Failed to create item ${item.kodeItem}:`,
+        e.response?.data || e.message,
       );
     }
-  });
+  }
+
+  console.log("Seed Item Completed.");
 };
 
-seeds().catch((err) => {
-  console.error(err);
+seed().catch((e) => {
+  console.error(e);
   process.exit(1);
 });
