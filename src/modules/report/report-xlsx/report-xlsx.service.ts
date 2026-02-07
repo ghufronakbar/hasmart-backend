@@ -222,9 +222,11 @@ export class ReportXlsxService extends BaseService {
       headerRow.font = { bold: true };
 
       const infoRow1 = worksheet.getRow(currentRow++);
-      infoRow1.getCell(1).value = "Tanggal";
-      infoRow1.getCell(2).value = new Date(item.transactionDate);
-      infoRow1.getCell(2).numFmt = "d/m/yyyy";
+      infoRow1.getCell(1).value = "Member";
+      infoRow1.getCell(2).value = item.memberName;
+      infoRow1.getCell(4).value = "Tanggal";
+      infoRow1.getCell(5).value = new Date(item.transactionDate);
+      infoRow1.getCell(5).numFmt = "d/m/yyyy";
 
       currentRow++; // Gap
 
@@ -235,7 +237,9 @@ export class ReportXlsxService extends BaseService {
       tableHeaderRow.getCell(3).value = "Qty";
       tableHeaderRow.getCell(4).value = "Harga";
       tableHeaderRow.getCell(5).value = "Diskon";
-      tableHeaderRow.getCell(6).value = "Total";
+      tableHeaderRow.getCell(6).value = "Harga Beli";
+      tableHeaderRow.getCell(7).value = "Laba Kotor";
+      tableHeaderRow.getCell(8).value = "Laba Bersih";
       tableHeaderRow.font = { bold: true };
 
       // Items
@@ -246,28 +250,44 @@ export class ReportXlsxService extends BaseService {
         row.getCell(3).value = detail.qty;
         row.getCell(4).value = detail.price;
         row.getCell(5).value = detail.discount;
-        row.getCell(6).value = detail.total;
+        row.getCell(6).value = detail.buyPrice;
+        row.getCell(7).value = detail.grossProfit;
+        row.getCell(8).value = detail.netProfit;
       });
 
       // Summary
       currentRow++; // Gap before summary
 
       const subTotalRow = worksheet.getRow(currentRow++);
-      subTotalRow.getCell(5).value = "Subtotal";
-      subTotalRow.getCell(6).value = item.subTotal;
-      subTotalRow.getCell(6).numFmt = "#,##0.00";
+      subTotalRow.getCell(6).value = "Subtotal";
+      subTotalRow.getCell(7).value = item.subTotal;
+      subTotalRow.getCell(7).numFmt = "#,##0.00";
 
       const discountRow = worksheet.getRow(currentRow++);
-      discountRow.getCell(5).value = "Diskon";
-      discountRow.getCell(6).value = item.discount;
-      discountRow.getCell(6).numFmt = "#,##0.00";
+      discountRow.getCell(6).value = "Diskon";
+      discountRow.getCell(7).value = item.discount;
+      discountRow.getCell(7).numFmt = "#,##0.00";
 
       const totalRow = worksheet.getRow(currentRow++);
-      totalRow.getCell(5).value = "Total";
-      totalRow.getCell(5).font = { bold: true };
-      totalRow.getCell(6).value = item.totalAmount;
+      totalRow.getCell(6).value = "Total";
       totalRow.getCell(6).font = { bold: true };
-      totalRow.getCell(6).numFmt = "#,##0.00";
+      totalRow.getCell(7).value = item.totalAmount;
+      totalRow.getCell(7).font = { bold: true };
+      totalRow.getCell(7).numFmt = "#,##0.00";
+
+      const totalGrossProfitRow = worksheet.getRow(currentRow++);
+      totalGrossProfitRow.getCell(6).value = "Laba Kotor";
+      totalGrossProfitRow.getCell(6).font = { bold: true };
+      totalGrossProfitRow.getCell(7).value = item.totalGrossProfit;
+      totalGrossProfitRow.getCell(7).font = { bold: true };
+      totalGrossProfitRow.getCell(7).numFmt = "#,##0.00";
+
+      const totalNetProfitRow = worksheet.getRow(currentRow++);
+      totalNetProfitRow.getCell(6).value = "Laba Bersih";
+      totalNetProfitRow.getCell(6).font = { bold: true };
+      totalNetProfitRow.getCell(7).value = item.totalNetProfit;
+      totalNetProfitRow.getCell(7).font = { bold: true };
+      totalNetProfitRow.getCell(7).numFmt = "#,##0.00";
 
       currentRow += 2; // Gap between transactions
     });
@@ -390,7 +410,7 @@ export class ReportXlsxService extends BaseService {
       headerRow.font = { bold: true };
 
       const infoRow1 = worksheet.getRow(currentRow++);
-      infoRow1.getCell(1).value = "Customer";
+      infoRow1.getCell(1).value = "Customer (Member)";
       infoRow1.getCell(2).value = item.customerName;
       infoRow1.getCell(4).value = "Tanggal";
       infoRow1.getCell(5).value = new Date(item.transactionDate);
@@ -413,7 +433,9 @@ export class ReportXlsxService extends BaseService {
       tableHeaderRow.getCell(4).value = "Harga";
       tableHeaderRow.getCell(5).value = "Diskon";
       tableHeaderRow.getCell(6).value = "Pajak";
-      tableHeaderRow.getCell(7).value = "Total";
+      tableHeaderRow.getCell(7).value = "Harga Beli";
+      tableHeaderRow.getCell(8).value = "Laba Kotor";
+      tableHeaderRow.getCell(9).value = "Laba Bersih";
       tableHeaderRow.font = { bold: true };
 
       // Items
@@ -425,33 +447,49 @@ export class ReportXlsxService extends BaseService {
         row.getCell(4).value = detail.price;
         row.getCell(5).value = detail.discount;
         row.getCell(6).value = detail.tax;
-        row.getCell(7).value = detail.total;
+        row.getCell(7).value = detail.buyPrice;
+        row.getCell(8).value = detail.grossProfit;
+        row.getCell(9).value = detail.netProfit;
       });
 
       // Summary
       currentRow++; // Gap before summary
 
       const subTotalRow = worksheet.getRow(currentRow++);
-      subTotalRow.getCell(6).value = "Subtotal";
-      subTotalRow.getCell(7).value = item.subTotal;
-      subTotalRow.getCell(7).numFmt = "#,##0.00";
+      subTotalRow.getCell(7).value = "Subtotal";
+      subTotalRow.getCell(8).value = item.subTotal;
+      subTotalRow.getCell(8).numFmt = "#,##0.00";
 
       const discountRow = worksheet.getRow(currentRow++);
-      discountRow.getCell(6).value = "Diskon";
-      discountRow.getCell(7).value = item.discount;
-      discountRow.getCell(7).numFmt = "#,##0.00";
+      discountRow.getCell(7).value = "Diskon";
+      discountRow.getCell(8).value = item.discount;
+      discountRow.getCell(8).numFmt = "#,##0.00";
 
       const taxRow = worksheet.getRow(currentRow++);
-      taxRow.getCell(6).value = "Pajak";
-      taxRow.getCell(7).value = item.tax;
-      taxRow.getCell(7).numFmt = "#,##0.00";
+      taxRow.getCell(7).value = "Pajak";
+      taxRow.getCell(8).value = item.tax;
+      taxRow.getCell(8).numFmt = "#,##0.00";
 
       const totalRow = worksheet.getRow(currentRow++);
-      totalRow.getCell(6).value = "Total";
-      totalRow.getCell(6).font = { bold: true };
-      totalRow.getCell(7).value = item.totalAmount;
+      totalRow.getCell(7).value = "Total";
       totalRow.getCell(7).font = { bold: true };
-      totalRow.getCell(7).numFmt = "#,##0.00";
+      totalRow.getCell(8).value = item.totalAmount;
+      totalRow.getCell(8).font = { bold: true };
+      totalRow.getCell(8).numFmt = "#,##0.00";
+
+      const totalGrossProfitRow = worksheet.getRow(currentRow++);
+      totalGrossProfitRow.getCell(7).value = "Laba Kotor";
+      totalGrossProfitRow.getCell(7).font = { bold: true };
+      totalGrossProfitRow.getCell(8).value = item.totalGrossProfit;
+      totalGrossProfitRow.getCell(8).font = { bold: true };
+      totalGrossProfitRow.getCell(8).numFmt = "#,##0.00";
+
+      const totalNetProfitRow = worksheet.getRow(currentRow++);
+      totalNetProfitRow.getCell(7).value = "Laba Bersih";
+      totalNetProfitRow.getCell(7).font = { bold: true };
+      totalNetProfitRow.getCell(8).value = item.totalNetProfit;
+      totalNetProfitRow.getCell(8).font = { bold: true };
+      totalNetProfitRow.getCell(8).numFmt = "#,##0.00";
 
       currentRow += 2; // Gap between transactions
     });

@@ -55,6 +55,9 @@ export interface SalesReportItemDetail {
   qty: number;
   price: number;
   discount: number;
+  netProfit: number;
+  grossProfit: number;
+  buyPrice: number;
   total: number;
 }
 
@@ -62,8 +65,11 @@ export interface SalesReportItem {
   id: number;
   transactionDate: Date;
   invoiceNumber: string;
+  memberName: string;
   subTotal: number;
   discount: number;
+  totalNetProfit: number;
+  totalGrossProfit: number;
   totalAmount: number;
   items: SalesReportItemDetail[];
 }
@@ -95,6 +101,9 @@ export interface SellReportItemDetail {
   price: number;
   discount: number;
   tax: number;
+  netProfit: number;
+  grossProfit: number;
+  buyPrice: number;
   total: number;
 }
 
@@ -121,6 +130,8 @@ export interface SellReportItem {
   subTotal: number;
   discount: number;
   tax: number;
+  totalNetProfit: number;
+  totalGrossProfit: number;
   totalAmount: number;
   dueDate: Date;
   items: SellReportItemDetail[];

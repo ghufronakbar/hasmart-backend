@@ -207,6 +207,17 @@ export class ReportService extends BaseService {
     const transactions = await this.prisma.transactionSales.findMany({
       where,
       include: {
+        masterMember: {
+          select: {
+            name: true,
+            code: true,
+            masterMemberCategory: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
         transactionSalesItems: {
           include: {
             masterItem: true,
@@ -219,23 +230,49 @@ export class ReportService extends BaseService {
       },
     });
 
-    const items: SalesReportItem[] = transactions.map((t) => ({
-      id: t.id,
-      transactionDate: t.transactionDate,
-      invoiceNumber: t.invoiceNumber,
-      subTotal: Number(t.recordedSubTotalAmount),
-      discount: Number(t.recordedDiscountAmount),
-      totalAmount: Number(t.recordedTotalAmount),
+    const items: SalesReportItem[] = transactions.map((t) => {
+      let totalNetProfit = 0;
+      let totalGrossProfit = 0; // Revenue
 
-      items: t.transactionSalesItems.map((item) => ({
-        itemName: item.masterItem.name,
-        variantName: item.masterItemVariant.unit,
-        qty: item.qty,
-        price: Number(item.salesPrice),
-        discount: Number(item.recordedDiscountAmount),
-        total: Number(item.recordedTotalAmount),
-      })),
-    }));
+      const salesItems = t.transactionSalesItems.map((item) => {
+        const revenue = Number(item.recordedTotalAmount);
+        const buyPricePerUnit =
+          Number(item.masterItem.recordedBuyPrice) *
+          item.masterItemVariant.amount;
+        const totalCost = buyPricePerUnit * item.qty;
+        const netProfit = revenue - totalCost;
+
+        totalNetProfit += netProfit;
+        totalGrossProfit += revenue;
+
+        return {
+          itemName: item.masterItem.name,
+          variantName: item.masterItemVariant.unit,
+          qty: item.qty,
+          price: Number(item.salesPrice),
+          discount: Number(item.recordedDiscountAmount),
+          total: Number(item.recordedTotalAmount), // Revenue
+          grossProfit: revenue,
+          netProfit: netProfit,
+          buyPrice: buyPricePerUnit,
+        };
+      });
+
+      return {
+        id: t.id,
+        transactionDate: t.transactionDate,
+        invoiceNumber: t.invoiceNumber,
+        memberName: t.masterMember
+          ? `${t.masterMember.name} (${t.masterMember.code}) - ${t.masterMember.masterMemberCategory.name}`
+          : "-",
+        subTotal: Number(t.recordedSubTotalAmount),
+        discount: Number(t.recordedDiscountAmount),
+        totalAmount: Number(t.recordedTotalAmount),
+        totalGrossProfit,
+        totalNetProfit,
+        items: salesItems,
+      };
+    });
 
     if (query?.exportAs === "pdf" || query?.exportAs === "preview") {
       const buffer = await this.pdfService.generateSalesReport(items);
@@ -362,27 +399,52 @@ export class ReportService extends BaseService {
       },
     });
 
-    const items: SellReportItem[] = transactions.map((t) => ({
-      id: t.id,
-      transactionDate: t.transactionDate,
-      invoiceNumber: t.invoiceNumber,
-      customerName: t.masterMember.name,
-      subTotal: Number(t.recordedSubTotalAmount),
-      discount: Number(t.recordedDiscountAmount),
-      tax: Number(t.recordedTaxAmount),
-      totalAmount: Number(t.recordedTotalAmount),
-      dueDate: t.dueDate,
+    const items: SellReportItem[] = transactions.map((t) => {
+      let totalNetProfit = 0;
+      let totalGrossProfit = 0;
 
-      items: t.transactionSellItems.map((item) => ({
-        itemName: item.masterItem.name,
-        variantName: item.masterItemVariant.unit,
-        qty: item.qty,
-        price: Number(item.sellPrice),
-        discount: Number(item.recordedDiscountAmount),
-        tax: 0, // Sell Items don't seem to have explicit recordedTaxAmount per item in schema shown, use header tax usually or calculate. Schema has recordedTaxAmount on header.
-        total: Number(item.recordedTotalAmount),
-      })),
-    }));
+      const sellItems = t.transactionSellItems.map((item) => {
+        const revenue = Number(item.recordedTotalAmount);
+        const buyPricePerUnit =
+          Number(item.masterItem.recordedBuyPrice) *
+          item.masterItemVariant.amount;
+        const totalCost = buyPricePerUnit * item.qty;
+        const netProfit = revenue - totalCost;
+
+        totalNetProfit += netProfit;
+        totalGrossProfit += revenue;
+
+        return {
+          itemName: item.masterItem.name,
+          variantName: item.masterItemVariant.unit,
+          qty: item.qty,
+          price: Number(item.sellPrice),
+          discount: Number(item.recordedDiscountAmount),
+          tax: 0, // Sell Items don't seem to have explicit recordedTaxAmount per item in schema shown, use header tax usually or calculate. Schema has recordedTaxAmount on header.
+          total: Number(item.recordedTotalAmount),
+          grossProfit: revenue,
+          netProfit: netProfit,
+          buyPrice: buyPricePerUnit,
+        };
+      });
+
+      return {
+        id: t.id,
+        transactionDate: t.transactionDate,
+        invoiceNumber: t.invoiceNumber,
+        customerName: t.masterMember.name,
+        subTotal: Number(t.recordedSubTotalAmount),
+        discount: Number(t.recordedDiscountAmount),
+        tax: Number(t.recordedTaxAmount),
+        totalAmount: Number(t.recordedTotalAmount),
+        totalGrossProfit,
+        totalNetProfit,
+
+        dueDate: t.dueDate,
+
+        items: sellItems,
+      };
+    });
 
     if (query?.exportAs === "pdf" || query?.exportAs === "preview") {
       const buffer = await this.pdfService.generateSellReport(items);

@@ -318,6 +318,10 @@ export class ReportPdfService extends BaseService {
       content.push({
         columns: [
           {
+            text: `Member: ${sales.memberName}`,
+            alignment: "left",
+          },
+          {
             text: `Tanggal: ${ReportHelper.formatDate(sales.transactionDate)}`,
             alignment: "right",
           },
@@ -362,6 +366,28 @@ export class ReportPdfService extends BaseService {
                   },
                 ],
               },
+              {
+                columns: [
+                  { text: "Laba Kotor:", width: 60, bold: true },
+                  {
+                    text: ReportHelper.formatCurrency(sales.totalGrossProfit),
+                    alignment: "right",
+                    width: 80,
+                    bold: true,
+                  },
+                ],
+              },
+              {
+                columns: [
+                  { text: "Laba Bersih:", width: 60, bold: true },
+                  {
+                    text: ReportHelper.formatCurrency(sales.totalNetProfit),
+                    alignment: "right",
+                    width: 80,
+                    bold: true,
+                  },
+                ],
+              },
             ],
           },
         ],
@@ -373,7 +399,7 @@ export class ReportPdfService extends BaseService {
         style: "tableExample",
         table: {
           headerRows: 1,
-          widths: ["*", "auto", "auto", "auto", "auto", "auto"],
+          widths: ["*", "auto", "auto", "auto", "auto", "auto", "auto", "auto"],
           body: [
             [
               { text: "Nama Barang", style: "tableHeader" },
@@ -381,7 +407,9 @@ export class ReportPdfService extends BaseService {
               { text: "Qty", style: "tableHeader", alignment: "right" },
               { text: "Harga", style: "tableHeader", alignment: "right" },
               { text: "Diskon", style: "tableHeader", alignment: "right" },
-              { text: "Total", style: "tableHeader", alignment: "right" },
+              { text: "Harga Beli", style: "tableHeader", alignment: "right" },
+              { text: "Laba Kotor", style: "tableHeader", alignment: "right" },
+              { text: "Laba Bersih", style: "tableHeader", alignment: "right" },
             ],
             ...sales.items.map((item) => [
               item.itemName,
@@ -396,7 +424,15 @@ export class ReportPdfService extends BaseService {
                 alignment: "right" as const,
               },
               {
-                text: ReportHelper.formatCurrency(item.total),
+                text: ReportHelper.formatCurrency(item.buyPrice),
+                alignment: "right" as const,
+              },
+              {
+                text: ReportHelper.formatCurrency(item.grossProfit),
+                alignment: "right" as const,
+              },
+              {
+                text: ReportHelper.formatCurrency(item.netProfit),
                 alignment: "right" as const,
               },
             ]),
@@ -500,7 +536,7 @@ export class ReportPdfService extends BaseService {
         style: "tableExample",
         table: {
           headerRows: 1,
-          widths: ["*", "auto", "auto", "auto", "auto", "auto"],
+          widths: ["*", "auto", "auto", "auto", "auto", "auto", "auto"],
           body: [
             [
               { text: "Nama Barang", style: "tableHeader" },
@@ -570,7 +606,7 @@ export class ReportPdfService extends BaseService {
         columns: [
           {
             text: [
-              { text: "Customer: ", bold: true },
+              { text: "Customer (Member): ", bold: true },
               item.customerName,
               "\n",
               { text: "Jatuh Tempo: ", bold: true },
@@ -632,6 +668,28 @@ export class ReportPdfService extends BaseService {
                   },
                 ],
               },
+              {
+                columns: [
+                  { text: "Laba Kotor:", width: 60, bold: true },
+                  {
+                    text: ReportHelper.formatCurrency(item.totalGrossProfit),
+                    alignment: "right",
+                    width: 80,
+                    bold: true,
+                  },
+                ],
+              },
+              {
+                columns: [
+                  { text: "Laba Bersih:", width: 60, bold: true },
+                  {
+                    text: ReportHelper.formatCurrency(item.totalNetProfit),
+                    alignment: "right",
+                    width: 80,
+                    bold: true,
+                  },
+                ],
+              },
             ],
           },
         ],
@@ -643,7 +701,7 @@ export class ReportPdfService extends BaseService {
         style: "tableExample",
         table: {
           headerRows: 1,
-          widths: ["*", "auto", "auto", "auto", "auto", "auto", "auto"],
+          widths: ["*", "auto", "auto", "auto", "auto", "auto", "auto", "auto"],
           body: [
             [
               { text: "Nama Barang", style: "tableHeader" },
@@ -652,7 +710,9 @@ export class ReportPdfService extends BaseService {
               { text: "Harga", style: "tableHeader", alignment: "right" },
               { text: "Diskon", style: "tableHeader", alignment: "right" },
               { text: "Pajak", style: "tableHeader", alignment: "right" },
-              { text: "Total", style: "tableHeader", alignment: "right" },
+              { text: "Harga Beli", style: "tableHeader", alignment: "right" },
+              { text: "Laba Kotor", style: "tableHeader", alignment: "right" },
+              { text: "Laba Bersih", style: "tableHeader", alignment: "right" },
             ],
             ...item.items.map((detail) => [
               detail.itemName,
@@ -671,7 +731,15 @@ export class ReportPdfService extends BaseService {
                 alignment: "right" as const,
               },
               {
-                text: ReportHelper.formatCurrency(detail.total),
+                text: ReportHelper.formatCurrency(detail.buyPrice),
+                alignment: "right" as const,
+              },
+              {
+                text: ReportHelper.formatCurrency(detail.grossProfit),
+                alignment: "right" as const,
+              },
+              {
+                text: ReportHelper.formatCurrency(detail.netProfit),
                 alignment: "right" as const,
               },
             ]),
