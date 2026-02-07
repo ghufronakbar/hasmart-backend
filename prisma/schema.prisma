@@ -41,6 +41,7 @@ model Branch {
   transactionTransferTos     TransactionTransfer[]       @relation("ToTransfer")
   transactionAdjustments     TransactionAdjustment[]
   frontStockTransfers        FrontStockTransfer[]
+  transactionCashFlows       TransactionCashFlow[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
@@ -115,6 +116,8 @@ model User {
   accessTransactionTransferWrite       Boolean @default(false) @map("access_transaction_transfer_write")
   accessTransactionAdjustmentRead      Boolean @default(false) @map("access_transaction_adjustment_read")
   accessTransactionAdjustmentWrite     Boolean @default(false) @map("access_transaction_adjustment_write")
+  accessTransactionCashFlowRead        Boolean @default(false) @map("access_transaction_cash_flow_read")
+  accessTransactionCashFlowWrite       Boolean @default(false) @map("access_transaction_cash_flow_write")
 
   @@map("users")
 }
@@ -1034,6 +1037,7 @@ enum RecordActionModelType {
   TRANSACTION_SELL_RETURN
   TRANSACTION_TRANSFER
   TRANSACTION_ADJUSTMENT
+  TRANSACTION_CASH_FLOW
 }
 
 enum RecordActionType {
@@ -1085,4 +1089,33 @@ model ItemBuyPriceOverride {
 
   @@index([masterItemId, createdAt])
   @@map("item_buy_price_overrides")
+}
+
+// KAS MASUK / KAS KELUAR
+// CASE:
+// semisal kasir ada keperluan beli gas, beli bensi
+// semisal ada uang kembalian yang tidak terpakai / donasi
+
+model TransactionCashFlow {
+  id Int @id @default(autoincrement()) @map("id")
+
+  transactionDate DateTime                @map("transaction_date")
+  notes           String                  @default("") @map("notes") @db.Text()
+  amount          Decimal                 @map("amount") @db.Decimal(18, 2) // plus
+  type            TransactionCashFlowType @map("type")
+
+  // branch
+  branchId Int    @map("branch_id")
+  branch   Branch @relation(fields: [branchId], references: [id])
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("transaction_cash_flows")
+}
+
+enum TransactionCashFlowType {
+  IN
+  OUT
 }
