@@ -42,7 +42,7 @@ export class RefreshBuyPriceService extends BaseService {
         _sum: {
           totalQty: true,
           // Menggunakan recordedTotalAmount karena ini nilai finansial final
-          recordedTotalAmount: true,
+          recordedAfterTaxAmount: true,
         },
         where: {
           masterItemId: masterItemId,
@@ -92,7 +92,7 @@ export class RefreshBuyPriceService extends BaseService {
 
     // Decimal calculations
     const purchaseAmount =
-      purchaseAgg._sum.recordedTotalAmount ?? new Decimal(0);
+      purchaseAgg._sum.recordedAfterTaxAmount ?? new Decimal(0);
     const returnAmount = returnAgg._sum.recordedTotalAmount ?? new Decimal(0);
 
     // Rumus: Qty Akhir = Awal + Beli - Retur

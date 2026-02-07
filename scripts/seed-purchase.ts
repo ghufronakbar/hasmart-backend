@@ -3,6 +3,17 @@ import path from "node:path";
 import * as XLSX from "xlsx";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import axios from "axios";
+
+const accessToken =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsIm5hbWUiOiJhZG1pbiIsImlhdCI6MTc3MDQ1MjAyNn0.ll__lZz73AQvNrOEQlu62l6gEHVjuiWav1JPyJpg--c";
+
+const axiosInstance = axios.create({
+  baseURL: "http://localhost:9999/api",
+  headers: {
+    Authorization: `Bearer ${accessToken}`,
+  },
+});
 
 const prisma = new PrismaClient();
 
