@@ -84,11 +84,7 @@ export class ItemService extends BaseService {
       where: this.constructWhere(filter, itemQuery),
       skip: filter?.skip,
       take: filter?.limit,
-      orderBy: filter?.sortBy
-        ? {
-            [filter?.sortBy]: filter?.sort,
-          }
-        : undefined,
+      orderBy: this.constructOrder(filter),
       include: {
         masterItemCategory: {
           select: { id: true, code: true, name: true },
@@ -108,6 +104,29 @@ export class ItemService extends BaseService {
     };
 
     return args;
+  }
+
+  private constructOrder(
+    filter?: FilterQueryType,
+  ): Prisma.MasterItemOrderByWithRelationInput | undefined {
+    switch (filter?.sortBy) {
+      case "supplier":
+        return {
+          masterSupplier: {
+            name: filter?.sort,
+          },
+        };
+      case "category":
+        return {
+          masterItemCategory: {
+            name: filter?.sort,
+          },
+        };
+      default:
+        return filter?.sortBy
+          ? { [filter?.sortBy]: filter?.sort }
+          : { id: "desc" };
+    }
   }
 
   private mapToListResponse(

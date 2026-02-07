@@ -49,6 +49,16 @@ export class FrontStockService extends BaseService {
         id: true,
         name: true,
         code: true,
+        masterSupplier: {
+          select: {
+            name: true,
+          },
+        },
+        masterItemCategory: {
+          select: {
+            name: true,
+          },
+        },
         masterItemVariants: {
           where: {
             deletedAt: null,
@@ -85,6 +95,20 @@ export class FrontStockService extends BaseService {
     if (filter?.sortBy === "rearStock") {
       return undefined;
     }
+    if (filter?.sortBy === "supplier") {
+      return {
+        masterSupplier: {
+          name: filter?.sort,
+        },
+      };
+    }
+    if (filter?.sortBy === "category") {
+      return {
+        masterItemCategory: {
+          name: filter?.sort,
+        },
+      };
+    }
     return filter?.sortBy ? { [filter?.sortBy]: filter?.sort } : { id: "desc" };
   }
 
@@ -113,6 +137,8 @@ export class FrontStockService extends BaseService {
     const cRows = rows as unknown as (MasterItem & {
       itemBranches: { recordedFrontStock: number; recordedStock: number }[];
       masterItemVariants: MasterItemVariant[];
+      masterSupplier: { name: string } | null;
+      masterItemCategory: { name: string } | null;
     })[];
 
     const data: ItemFrontStockResponse[] = cRows.map((item) => {
@@ -120,6 +146,8 @@ export class FrontStockService extends BaseService {
         id: item.id,
         name: item.name,
         code: item.code,
+        supplier: item.masterSupplier?.name || "",
+        category: item.masterItemCategory?.name || "",
         frontStock: item.itemBranches?.[0]?.recordedFrontStock || 0,
         rearStock:
           (item.itemBranches?.[0]?.recordedStock || 0) -
@@ -153,6 +181,8 @@ export class FrontStockService extends BaseService {
         id: number;
         name: string;
         code: string;
+        supplier: string;
+        category: string;
         front_stock: number;
         rear_stock: number;
       }>
@@ -161,18 +191,26 @@ export class FrontStockService extends BaseService {
         mi.id,
         mi.name,
         mi.code,
+        COALESCE(ms.name, '') as supplier,
+        COALESCE(mic.name, '') as category,
         COALESCE(ib.recorded_front_stock, 0) as front_stock,
         (COALESCE(ib.recorded_stock, 0) - COALESCE(ib.recorded_front_stock, 0)) as rear_stock
       FROM master_items mi
       LEFT JOIN item_branches ib ON ib.master_item_id = mi.id 
         AND ib.branch_id = ${branchId} 
         AND ib.deleted_at IS NULL
+      LEFT JOIN master_suppliers ms ON ms.id = mi.master_supplier_id
+      LEFT JOIN categories mic ON mic.id = mi.master_item_category_id
       WHERE mi.deleted_at IS NULL
-        AND (${searchPattern}::text IS NULL OR mi.name ILIKE ${searchPattern} OR mi.code ILIKE ${searchPattern})
+        AND (${searchPattern}::text IS NULL OR mi.name ILIKE ${searchPattern} OR mi.code ILIKE ${searchPattern} OR ms.name ILIKE ${searchPattern} OR mic.name ILIKE ${searchPattern})
       ORDER BY ${
         filter?.sortBy === "rearStock"
           ? Prisma.sql`rear_stock`
-          : Prisma.sql`front_stock`
+          : filter?.sortBy === "supplier"
+            ? Prisma.sql`supplier`
+            : filter?.sortBy === "category"
+              ? Prisma.sql`category`
+              : Prisma.sql`front_stock`
       } ${sortOrder}, mi.id DESC
       LIMIT ${limit} OFFSET ${offset}
     `;
@@ -201,6 +239,8 @@ export class FrontStockService extends BaseService {
       id: item.id,
       name: item.name,
       code: item.code,
+      supplier: item.supplier,
+      category: item.category,
       frontStock: item.front_stock,
       rearStock: item.rear_stock,
       variants: variants.filter((v) => v.masterItemId === item.id),

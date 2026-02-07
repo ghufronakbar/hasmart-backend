@@ -29,7 +29,7 @@ export class ItemRouter extends BaseRouter {
     this.router.get(
       "/",
       useAuth(this.jwtService),
-      useFilter(["name", "code"]),
+      useFilter(["name", "code", "supplier", "category"]),
       useBranch(),
       validateHandler({ query: ItemQuerySchema }),
       asyncHandler(

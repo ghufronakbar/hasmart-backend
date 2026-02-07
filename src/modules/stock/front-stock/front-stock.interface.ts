@@ -11,8 +11,8 @@ export interface ItemFrontStockResponse {
   id: number; // master item id
   name: string; // master item name
   code: string; // master item code
-  supplier: string; // master item supplier
-  category: string; // master item category
+  supplier: string; // master item supplier.name
+  category: string; // master item category.name
   frontStock: number;
   rearStock: number;
   variants: MasterItemVariant[];
