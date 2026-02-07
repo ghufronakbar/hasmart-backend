@@ -1,3 +1,5 @@
+import { Branch, SalesPaymentType } from ".prisma/client";
+
 export interface ReceiptItem {
   name: string;
   qty: number;
@@ -24,3 +26,18 @@ export interface ReceiptData {
   payAmount: string;
   changeAmount: string;
 }
+
+// SALES
+export type SalesReceipt = {
+  branch: Branch;
+  date: Date;
+  cashierName: string; // user.name
+  totalTransaction: number; // berapa banyak transaksi
+  totalAmount: string; // uang masuk
+  totalReturn: string; // uang keluar
+  paymentType: {
+    [key in SalesPaymentType]: string;
+  };
+  cashIncome: string; // uang yang diterima (hanya untuk cash)
+  balance: string; // cashIncome - totalReturn
+};

@@ -6,3 +6,10 @@ export const ReceiptParamsSchema = z.object({
 });
 
 export type ReceiptParamsType = z.infer<typeof ReceiptParamsSchema>;
+
+export const SalesReceiptQuerySchema = z.object({
+  date: z.coerce.date(),
+  branchId: z.coerce.number(),
+});
+
+export type SalesReceiptQueryType = z.infer<typeof SalesReceiptQuerySchema>;

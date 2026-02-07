@@ -18,7 +18,15 @@ export const SalesBodySchema = z.object({
   memberCode: z.string().optional().nullable(),
   cashReceived: decimalSchema,
   items: z.array(SalesItemSchema).min(1, "Minimal harus ada 1 item"),
-  paymentType: z.nativeEnum(SalesPaymentType),
+  // paymentType: z.nativeEnum(SalesPaymentType).default(SalesPaymentType.CASH), // nativeEnum sometimes tricky with zod in strict environment if enum not imported well
+  // Using enum values directly for safety if nativeEnum fails, or standard approach
+  paymentType: z
+    .enum([
+      SalesPaymentType.CASH,
+      SalesPaymentType.DEBIT,
+      SalesPaymentType.QRIS,
+    ])
+    .default(SalesPaymentType.CASH),
 });
 
 export type SalesBodyType = z.infer<typeof SalesBodySchema>;
