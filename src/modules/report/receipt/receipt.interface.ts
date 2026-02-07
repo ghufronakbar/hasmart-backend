@@ -35,6 +35,8 @@ export type SalesReceipt = {
   totalTransaction: number; // berapa banyak transaksi
   totalAmount: string; // uang masuk
   totalReturn: string; // uang keluar
+  cashFlowIn: string;
+  cashFlowOut: string;
   paymentType: {
     [key in SalesPaymentType]: string;
   };

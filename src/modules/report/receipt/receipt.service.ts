@@ -5,6 +5,7 @@ import {
   RecordActionModelType,
   RecordActionType,
   SalesPaymentType,
+  TransactionCashFlowType,
 } from ".prisma/client";
 import { ReceiptData, SalesReceipt } from "./receipt.interface";
 import { ReceiptParamsType, SalesReceiptQueryType } from "./receipt.validator";
@@ -233,38 +234,54 @@ export class ReceiptService extends BaseService {
     endDate.setDate(endDate.getDate() + 1);
 
     // 2. Fetch Data in Parallel
-    const [branch, cashier, salesActions, returnActions] = await Promise.all([
-      this.prisma.branch.findFirst({
-        where: { id: params.branchId },
-      }),
-      this.prisma.user.findFirst({
-        where: { id: userId },
-      }),
-      this.prisma.recordAction.findMany({
-        where: {
-          userId: userId,
-          modelType: RecordActionModelType.TRANSACTION_SALES,
-          actionType: RecordActionType.CREATE,
-          createdAt: {
-            gte: startDate,
-            lt: endDate,
+    const [branch, cashier, salesActions, returnActions, cashFlowActions] =
+      await Promise.all([
+        this.prisma.branch.findFirst({
+          where: { id: params.branchId },
+        }),
+        this.prisma.user.findFirst({
+          where: { id: userId },
+          select: {
+            name: true,
           },
-        },
-        select: { modelId: true },
-      }),
-      this.prisma.recordAction.findMany({
-        where: {
-          userId: userId,
-          modelType: RecordActionModelType.TRANSACTION_SALES_RETURN,
-          actionType: RecordActionType.CREATE,
-          createdAt: {
-            gte: startDate,
-            lt: endDate,
+        }),
+        this.prisma.recordAction.findMany({
+          where: {
+            userId: userId,
+            modelType: RecordActionModelType.TRANSACTION_SALES,
+            actionType: RecordActionType.CREATE,
+            createdAt: {
+              gte: startDate,
+              lt: endDate,
+            },
           },
-        },
-        select: { modelId: true },
-      }),
-    ]);
+          select: { modelId: true },
+        }),
+        this.prisma.recordAction.findMany({
+          where: {
+            userId: userId,
+            modelType: RecordActionModelType.TRANSACTION_SALES_RETURN,
+            actionType: RecordActionType.CREATE,
+            createdAt: {
+              gte: startDate,
+              lt: endDate,
+            },
+          },
+          select: { modelId: true },
+        }),
+        this.prisma.recordAction.findMany({
+          where: {
+            userId: userId,
+            modelType: RecordActionModelType.TRANSACTION_CASH_FLOW,
+            actionType: RecordActionType.CREATE,
+            createdAt: {
+              gte: startDate,
+              lt: endDate,
+            },
+          },
+          select: { modelId: true },
+        }),
+      ]);
 
     if (!branch) throw new NotFoundError("Cabang tidak ditemukan");
     if (!cashier) throw new NotFoundError("User tidak ditemukan");
@@ -272,32 +289,46 @@ export class ReceiptService extends BaseService {
     // 3. Fetch Transactions based on IDs
     const salesIds = salesActions.map((a) => a.modelId);
     const returnIds = returnActions.map((a) => a.modelId);
+    const cashFlowIds = cashFlowActions.map((a) => a.modelId);
 
-    const [salesTransactions, returnTransactions] = await Promise.all([
-      this.prisma.transactionSales.findMany({
-        where: {
-          id: { in: salesIds },
-          branchId: params.branchId,
-          deletedAt: null,
-        },
-        select: {
-          id: true,
-          recordedTotalAmount: true,
-          paymentType: true,
-        },
-      }),
-      this.prisma.transactionSalesReturn.findMany({
-        where: {
-          id: { in: returnIds },
-          branchId: params.branchId,
-          deletedAt: null,
-        },
-        select: {
-          id: true,
-          recordedTotalAmount: true,
-        },
-      }),
-    ]);
+    const [salesTransactions, returnTransactions, cashFlowTransactions] =
+      await Promise.all([
+        this.prisma.transactionSales.findMany({
+          where: {
+            id: { in: salesIds },
+            branchId: params.branchId,
+            deletedAt: null,
+          },
+          select: {
+            id: true,
+            recordedTotalAmount: true,
+            paymentType: true,
+          },
+        }),
+        this.prisma.transactionSalesReturn.findMany({
+          where: {
+            id: { in: returnIds },
+            branchId: params.branchId,
+            deletedAt: null,
+          },
+          select: {
+            id: true,
+            recordedTotalAmount: true,
+          },
+        }),
+        this.prisma.transactionCashFlow.findMany({
+          where: {
+            id: { in: cashFlowIds },
+            branchId: params.branchId,
+            deletedAt: null,
+          },
+          select: {
+            id: true,
+            amount: true,
+            type: true,
+          },
+        }),
+      ]);
 
     // 4. Aggregate Sales Data
     let totalTransaction = 0;
@@ -331,6 +362,17 @@ export class ReceiptService extends BaseService {
     const cashIncome = paymentTypeSummary[SalesPaymentType.CASH];
     const balance = cashIncome.sub(totalReturn);
 
+    // 7. Aggregate Cash Flow Data
+    let cashFlowIn = new Decimal(0);
+    let cashFlowOut = new Decimal(0);
+    cashFlowTransactions.forEach((t) => {
+      if (t.type === TransactionCashFlowType.IN) {
+        cashFlowIn = cashFlowIn.add(t.amount);
+      } else {
+        cashFlowOut = cashFlowOut.add(t.amount);
+      }
+    });
+
     return {
       branch,
       date: startDate,
@@ -338,6 +380,8 @@ export class ReceiptService extends BaseService {
       totalTransaction,
       totalAmount: totalAmount.toString(),
       totalReturn: totalReturn.toString(),
+      cashFlowIn: cashFlowIn.toString(),
+      cashFlowOut: cashFlowOut.toString(),
       paymentType: {
         CASH: paymentTypeSummary.CASH.toString(),
         DEBIT: paymentTypeSummary.DEBIT.toString(),
