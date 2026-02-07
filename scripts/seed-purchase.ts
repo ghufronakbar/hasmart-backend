@@ -1,21 +1,22 @@
-// scripts/seed-purchase.ts
 import path from "node:path";
 import * as XLSX from "xlsx";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import axios from "axios";
+import jwt from "jsonwebtoken";
+import * as dotenv from "dotenv";
 
-const accessToken =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsIm5hbWUiOiJhZG1pbiIsImlhdCI6MTc3MDQ1MjAyNn0.ll__lZz73AQvNrOEQlu62l6gEHVjuiWav1JPyJpg--c";
+dotenv.config();
+
+const JWT_SECRET =
+  process.env.JWT_ACCESS_SECRET ||
+  "s3cr3t-must-be-very-long-and-secure-min-32-chars"; // Fallback matching common env
+
+const prisma = new PrismaClient();
 
 const axiosInstance = axios.create({
   baseURL: "http://localhost:9999/api",
-  headers: {
-    Authorization: `Bearer ${accessToken}`,
-  },
 });
-
-const prisma = new PrismaClient();
 
 export interface PembelianDoc {
   meta?: {
@@ -50,6 +51,7 @@ export interface PembelianItem {
   sat: string;
   hargaBeli: number | null;
   diskon: number | null;
+  discounts?: number | null;
   jumlah: number | null;
 }
 
@@ -315,14 +317,44 @@ const xlsPath = path.resolve(process.cwd(), "scripts", "PEMBELIAN.xls");
 const seed = async () => {
   const pembelianJson: PembelianDoc = readPembelianXls(xlsPath);
 
-  const users = await prisma.user.findMany();
-
-  const firstBranch = await prisma.branch.findFirst();
+  // 1. Ensure Admin User Exists
   const PASSWORD = "12345678";
   const hashedPassword = await bcrypt.hash(PASSWORD, 10);
 
+  let adminUser = await prisma.user.findFirst({ where: { name: "admin" } });
+  if (!adminUser) {
+    console.log("Creating admin user...");
+    adminUser = await prisma.user.create({
+      data: {
+        name: "admin",
+        password: hashedPassword,
+        isActive: true,
+        isSuperUser: true,
+      },
+    });
+  }
+
+  // 2. Generate Token
+  const token = jwt.sign(
+    { userId: adminUser.id, name: adminUser.name },
+    JWT_SECRET,
+    { expiresIn: "1h" },
+  );
+
+  axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+  let firstBranch = await prisma.branch.findFirst();
+
   if (!firstBranch) {
-    throw new Error("Branch not found");
+    console.log("Creating default branch...");
+    firstBranch = await prisma.branch.create({
+      data: {
+        code: "PUSAT",
+        name: "Pusat",
+        address: "Salatiga",
+        phone: "08123456789",
+      },
+    });
   }
 
   const itemWithVariant = await prisma.masterItem.findMany({
@@ -341,90 +373,209 @@ const seed = async () => {
 
   const suppliers = await prisma.masterSupplier.findMany();
 
-  for await (const purc of pembelianJson.pembelian) {
+  // Create map for variant lookup by code + unit
+  const variantMap = new Map<string, any>();
+
+  itemWithVariant.forEach((item) => {
+    item.masterItemVariants.forEach((v) => {
+      // Key: ITEMCODE|UNIT
+      const key = `${item.code.trim().toUpperCase()}|${v.unit.trim().toUpperCase()}`;
+      variantMap.set(key, {
+        masterItemId: item.id,
+        masterItemVariantId: v.id,
+        purchasePrice: item.recordedBuyPrice || 0, // Use recorded buy price
+      });
+    });
+  });
+
+  console.log(`Loaded ${variantMap.size} variants for lookup.`);
+
+  // Hardcoded mapping from Excel Name to DB Code
+  const SUPPLIER_MAP: Record<string, string> = {
+    INDOMARCO: "IDM",
+    MAYORA: "MYR",
+    SOLO: "SL",
+    WINGS: "WGS",
+    DIPLOMAT: "DPL",
+    "COCA COLA": "CCL",
+    SURUH: "SRH",
+    UNILEVER: "UNN",
+    MALANG: "ML",
+    UMUM: "UMM",
+    "LUWAK COFFE": "LWK",
+    CIMORY: "CMR",
+    DJARUM: "DRM",
+    ARTABOGA: "ATB",
+    PELANGI: "PLG",
+    DANDANG: "DDG",
+    SALATIGA: "SL3",
+  };
+
+  // Fetch a default category for new items (e.g., first one found or specific code)
+  const defaultCategory = await prisma.masterItemCategory.findFirst();
+  if (!defaultCategory) {
+    throw new Error("No MasterItemCategory found. Cannot create new items.");
+  }
+
+  // Map for Item lookup (Code -> ID) to check if item exists even if variant doesn't
+  const itemMap = new Map<string, number>();
+  itemWithVariant.forEach((item) => {
+    itemMap.set(item.code.trim().toUpperCase(), item.id);
+  });
+
+  for (const purc of pembelianJson.pembelian) {
     const { header, items, summary } = purc;
     const { nomor, admin, tanggal, pemasok, jatuhTempo, lokasi } = header;
 
-    let adminId = 0;
-    let countAdmin = 0;
+    console.log(`Processing Invoice: ${nomor}`);
 
-    if (admin) {
-      const user = users.find((u) => u.name === admin);
-      if (user) {
-        adminId = user.id;
+    // 1. Validate Supplier
+    let supplierCode = "";
+
+    // Check mapping first
+    if (pemasok && SUPPLIER_MAP[pemasok.toUpperCase()]) {
+      supplierCode = SUPPLIER_MAP[pemasok.toUpperCase()];
+    }
+
+    // Find in DB
+    let supplier = suppliers.find(
+      (s) =>
+        s.code === supplierCode ||
+        s.name.toLowerCase() === pemasok?.toLowerCase(),
+    );
+
+    if (!supplier) {
+      if (pemasok) {
+        console.log(`Creating missing supplier: ${pemasok}`);
+        try {
+          // Create new supplier if not found
+          supplier = await prisma.masterSupplier.create({
+            data: {
+              code: supplierCode || pemasok.substring(0, 5).toUpperCase(), // Fallback code
+              name: pemasok,
+            },
+          });
+          suppliers.push(supplier); // Add to local cache
+        } catch (e) {
+          console.error(`Failed to create supplier ${pemasok}`, e);
+          continue;
+        }
       } else {
-        const newUser = await prisma.user.create({
-          data: {
-            name: admin,
-            password: hashedPassword,
-            isActive: true,
-            isSuperUser: countAdmin === 0 ? true : false,
-          },
-        });
-        adminId = newUser.id;
-        countAdmin++;
+        console.error(`Skipping ${nomor}: Supplier name missing`);
+        continue;
       }
     }
 
-    const supplier = suppliers.find(
-      (s) => s.name.toLowerCase() === pemasok?.toLowerCase(),
-    );
-    if (!supplier) {
-      throw new Error(`Supplier ${pemasok} not found`);
+    // 2. Map Items to Payload (Async to handle creation)
+    const purchaseItems: any[] = [];
+
+    for (const item of items) {
+      const itemCode = item.kode.trim().toUpperCase();
+      const itemUnit = item.sat.trim().toUpperCase();
+      const key = `${itemCode}|${itemUnit}`;
+
+      let variant = variantMap.get(key);
+
+      if (!variant) {
+        console.log(
+          `Missing data for ${item.nama} (${itemCode}) - ${itemUnit}. Creating...`,
+        );
+
+        try {
+          // Check if Master Item exists
+          let masterItemId = itemMap.get(itemCode);
+
+          if (!masterItemId) {
+            // Create Master Item
+            const newItem = await prisma.masterItem.create({
+              data: {
+                code: item.kode,
+                name: item.nama,
+                isActive: true,
+                masterSupplierId: supplier.id,
+                masterItemCategoryId: defaultCategory.id,
+                recordedBuyPrice: item.hargaBeli || 0,
+              },
+            });
+            masterItemId = newItem.id;
+            itemMap.set(itemCode, masterItemId);
+            console.log(`  -> Created MasterItem: ${item.nama}`);
+          }
+
+          // Create Master Item Variant
+          const newVariant = await prisma.masterItemVariant.create({
+            data: {
+              masterItemId: masterItemId,
+              unit: item.sat,
+              amount: 1, // Default conversion 1 if unknown. Logic might need adj if known ratio.
+              sellPrice: 0,
+              recordedBuyPrice: 0,
+              recordedProfitPercentage: 0,
+              recordedProfitAmount: 0,
+              isBaseUnit: false, // Defaulting to false unless sure
+            },
+          });
+
+          variant = {
+            masterItemId: masterItemId,
+            masterItemVariantId: newVariant.id,
+            purchasePrice: item.hargaBeli || 0,
+          };
+
+          variantMap.set(key, variant);
+          console.log(`  -> Created Variant: ${itemUnit}`);
+        } catch (err) {
+          console.error(
+            `  -> Failed to create item/variant for ${itemCode}`,
+            err,
+          );
+          continue; // Skip this item
+        }
+      }
+
+      purchaseItems.push({
+        masterItemVariantId: variant.masterItemVariantId,
+        qty: item.kuantitas || 0,
+        purchasePrice: item.hargaBeli || 0,
+        discounts: item.discounts ? [{ percentage: item.discounts }] : [],
+      });
     }
 
-    const createPurchase = await prisma.transactionPurchase.create({
-      data: {
-        branchId: firstBranch.id,
-        invoiceNumber: nomor || `NO-INVOICE-${Date.now()}`,
-        dueDate: new Date(jatuhTempo || new Date()),
-        masterSupplierId: supplier.id,
-        recordedDiscountAmount: 0,
-        recordedSubTotalAmount: 0,
-        recordedTotalAmount: 0,
-        recordedTaxAmount: 0,
-        recordedTaxPercentage: 0,
-        transactionDate: new Date(tanggal || new Date()),
-        transactionPurchaseItems: {
-          createMany: {
-            data: purc.items.map((item) => {
-              const findItem = itemWithVariant.find(
-                (i) => i.code.toLowerCase() === item.kode.toLowerCase(),
-              );
-              if (!findItem) {
-                throw new Error(`Item ${item.nama} not found`);
-              }
-              const findVariant = findItem.masterItemVariants.find(
-                (v) => v.unit.toLowerCase() === item.sat.toLowerCase(),
-              );
-              if (!findVariant) {
-                throw new Error(
-                  `Variant ${findItem.name} ${item.sat} not found`,
-                );
-              }
-              return {
-                masterItemId: findItem.id,
-                masterItemVariantId: findVariant.id,
-                purchasePrice: 0,
-                qty: 0,
-                recordedAfterTaxAmount: 0,
-                recordedConversion: 0,
-                recordedDiscountAmount: 0,
-                recordedSubTotalAmount: 0,
-                recordedTotalAmount: 0,
-                totalQty: 0,
-              };
-            }),
-          },
-        },
-      },
-    });
-  }
+    if (purchaseItems.length === 0) {
+      console.warn(`Skipping ${nomor}: No items found`);
+      continue;
+    }
 
-  // debug
-  // console.log(`Loaded pembelian entries: ${pembelianJson.pembelian.length}`);
-  // console.log(pembelianJson.pembelian[0]);
+    // 3. Construct Payload
+    const payload = {
+      invoiceNumber: nomor || `INV-${Date.now()}`,
+      transactionDate: new Date(tanggal || new Date()),
+      dueDate: new Date(jatuhTempo || new Date()),
+      masterSupplierCode: supplier.code,
+      branchId: firstBranch.id,
+      notes: summary?.keterangan || "",
+      taxPercentage: 0,
+      items: purchaseItems,
+    };
+
+    // 4. Call API
+    try {
+      const response = await axiosInstance.post(
+        "/transaction/purchase",
+        payload,
+      );
+      console.log(`Success: ${nomor} -> ID: ${response.data.data.id}`);
+    } catch (error: any) {
+      console.error(`Failed: ${nomor}`);
+      if (axios.isAxiosError(error)) {
+        console.error(JSON.stringify(error.response?.data, null, 2));
+      } else {
+        console.error(error.message);
+      }
+    }
+  }
 };
+
 seed().catch((e) => {
   console.error(e);
   process.exit(1);
