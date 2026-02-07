@@ -226,57 +226,80 @@ export class ReceiptService extends BaseService {
     params: SalesReceiptQueryType,
     userId: number,
   ): Promise<SalesReceipt> => {
-    // 1. Get Branch
-    const branch = await this.prisma.branch.findFirst({
-      where: { id: params.branchId },
-    });
-    if (!branch) throw new NotFoundError("Cabang tidak ditemukan");
-
-    // 2. Get User/Cashier
-    const cashier = await this.prisma.user.findFirst({
-      where: { id: userId },
-    });
-    if (!cashier) throw new NotFoundError("User tidak ditemukan");
-
-    // 3. Define Date Range (Full Day)
+    // 1. Define Date Range (Full Day)
     const startDate = new Date(params.date);
     startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + 1);
 
-    // 4. Fetch RecordActions to identify Sales created by this user today
-    const actions = await this.prisma.recordAction.findMany({
-      where: {
-        userId: userId,
-        modelType: RecordActionModelType.TRANSACTION_SALES,
-        actionType: RecordActionType.CREATE,
-        createdAt: {
-          gte: startDate,
-          lt: endDate,
+    // 2. Fetch Data in Parallel
+    const [branch, cashier, salesActions, returnActions] = await Promise.all([
+      this.prisma.branch.findFirst({
+        where: { id: params.branchId },
+      }),
+      this.prisma.user.findFirst({
+        where: { id: userId },
+      }),
+      this.prisma.recordAction.findMany({
+        where: {
+          userId: userId,
+          modelType: RecordActionModelType.TRANSACTION_SALES,
+          actionType: RecordActionType.CREATE,
+          createdAt: {
+            gte: startDate,
+            lt: endDate,
+          },
         },
-      },
-      select: { modelId: true },
-    });
+        select: { modelId: true },
+      }),
+      this.prisma.recordAction.findMany({
+        where: {
+          userId: userId,
+          modelType: RecordActionModelType.TRANSACTION_SALES_RETURN,
+          actionType: RecordActionType.CREATE,
+          createdAt: {
+            gte: startDate,
+            lt: endDate,
+          },
+        },
+        select: { modelId: true },
+      }),
+    ]);
 
-    const transactionIds = actions.map((a) => a.modelId);
+    if (!branch) throw new NotFoundError("Cabang tidak ditemukan");
+    if (!cashier) throw new NotFoundError("User tidak ditemukan");
 
-    // 5. Fetch Sales Transactions
-    const transactions = await this.prisma.transactionSales.findMany({
-      where: {
-        id: { in: transactionIds },
-        branchId: params.branchId,
-        deletedAt: null,
-      },
-      select: {
-        id: true,
-        recordedTotalAmount: true,
-        cashReceived: true,
-        cashChange: true,
-        paymentType: true,
-      },
-    });
+    // 3. Fetch Transactions based on IDs
+    const salesIds = salesActions.map((a) => a.modelId);
+    const returnIds = returnActions.map((a) => a.modelId);
 
-    // 6. Aggregate Data
+    const [salesTransactions, returnTransactions] = await Promise.all([
+      this.prisma.transactionSales.findMany({
+        where: {
+          id: { in: salesIds },
+          branchId: params.branchId,
+          deletedAt: null,
+        },
+        select: {
+          id: true,
+          recordedTotalAmount: true,
+          paymentType: true,
+        },
+      }),
+      this.prisma.transactionSalesReturn.findMany({
+        where: {
+          id: { in: returnIds },
+          branchId: params.branchId,
+          deletedAt: null,
+        },
+        select: {
+          id: true,
+          recordedTotalAmount: true,
+        },
+      }),
+    ]);
+
+    // 4. Aggregate Sales Data
     let totalTransaction = 0;
     let totalAmount = new Decimal(0);
     const paymentTypeSummary: Record<SalesPaymentType, Decimal> = {
@@ -285,13 +308,12 @@ export class ReceiptService extends BaseService {
       QRIS: new Decimal(0),
     };
 
-    transactions.forEach((t) => {
+    salesTransactions.forEach((t) => {
       totalTransaction++;
       const amount = t.recordedTotalAmount;
 
       totalAmount = totalAmount.add(amount);
 
-      // Payment Type Breakdown
       const type = t.paymentType || SalesPaymentType.CASH;
       if (!paymentTypeSummary[type]) {
         paymentTypeSummary[type] = new Decimal(0);
@@ -299,12 +321,14 @@ export class ReceiptService extends BaseService {
       paymentTypeSummary[type] = paymentTypeSummary[type].add(amount);
     });
 
+    // 5. Aggregate Return Data
+    let totalReturn = new Decimal(0);
+    returnTransactions.forEach((t) => {
+      totalReturn = totalReturn.add(t.recordedTotalAmount);
+    });
+
+    // 6. Calculate Finals
     const cashIncome = paymentTypeSummary[SalesPaymentType.CASH];
-
-    // Calculate total return (Placeholder for now)
-    const totalReturn = new Decimal(0);
-
-    // Balance
     const balance = cashIncome.sub(totalReturn);
 
     return {
