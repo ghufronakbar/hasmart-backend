@@ -365,6 +365,7 @@ export class SalesService extends BaseService {
           recordedSubTotalAmount,
           recordedDiscountAmount,
           recordedTotalAmount,
+          paymentType: data.paymentType,
           // TODO: ganti kalau bisa custom
           transactionDate: new Date(),
           transactionSalesItems: {
@@ -486,6 +487,7 @@ export class SalesService extends BaseService {
           recordedTotalAmount,
           cashReceived: data.cashReceived,
           cashChange,
+          paymentType: data.paymentType,
           transactionSalesItems: {
             create: calculatedItems.map((item) => ({
               masterItemId: item.masterItemId,

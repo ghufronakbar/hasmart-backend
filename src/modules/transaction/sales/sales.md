@@ -84,6 +84,7 @@ Authorization: Bearer <token>
   "notes": "Customer minta bon kosong",
   "memberCode": "MBR001",
   "cashReceived": 100000,
+  "paymentType": "CASH", // CASH, DEBIT, QRIS
   "items": [
     {
       "masterItemVariantId": 5,

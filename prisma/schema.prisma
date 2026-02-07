@@ -601,6 +601,9 @@ model TransactionSales {
   // relation
   transactionSalesItems TransactionSalesItem[]
 
+  // new enum type
+  paymentType SalesPaymentType @map("payment_type")
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
@@ -608,6 +611,12 @@ model TransactionSales {
   transactionSalesReturns TransactionSalesReturn[] // semisal jika ada retur, bisa banyak, karena bisa retur pesanan partial
 
   @@map("transaction_sales")
+}
+
+enum SalesPaymentType {
+  CASH
+  DEBIT
+  QRIS
 }
 
 model TransactionSalesItem {

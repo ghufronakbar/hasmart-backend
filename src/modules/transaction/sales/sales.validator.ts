@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { decimalSchema, percentageSchema } from "../../../utils/decimal.utils";
+import { SalesPaymentType } from ".prisma/client";
 
 const SalesDiscountSchema = z.object({
   percentage: percentageSchema, // CHANGED: Int → Decimal
@@ -17,6 +18,7 @@ export const SalesBodySchema = z.object({
   memberCode: z.string().optional().nullable(),
   cashReceived: decimalSchema,
   items: z.array(SalesItemSchema).min(1, "Minimal harus ada 1 item"),
+  paymentType: z.nativeEnum(SalesPaymentType),
 });
 
 export type SalesBodyType = z.infer<typeof SalesBodySchema>;
