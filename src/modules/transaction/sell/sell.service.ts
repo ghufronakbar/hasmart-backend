@@ -28,6 +28,7 @@ interface CalculatedItem {
   recordedSubTotalAmount: Decimal;
   recordedDiscountAmount: Decimal;
   recordedTotalAmount: Decimal;
+  recordedBuyPrice: Decimal;
   discounts: CalculatedDiscount[];
 }
 
@@ -290,7 +291,13 @@ export class SellService extends BaseService {
           deletedAt: null,
         },
       },
-      select: { id: true, masterItemId: true, amount: true, sellPrice: true },
+      select: {
+        id: true,
+        masterItemId: true,
+        amount: true,
+        sellPrice: true,
+        masterItem: { select: { recordedBuyPrice: true } },
+      },
     });
 
     if (variants.length !== uniqueVariantIds.length) {
@@ -307,7 +314,13 @@ export class SellService extends BaseService {
     items: SellBodyType["items"],
     variantMap: Map<
       number,
-      { id: number; masterItemId: number; amount: number; sellPrice: Decimal }
+      {
+        id: number;
+        masterItemId: number;
+        amount: number;
+        sellPrice: Decimal;
+        masterItem: { recordedBuyPrice: Decimal };
+      }
     >,
   ): CalculatedItem[] {
     return items.map((item) => {
@@ -338,6 +351,8 @@ export class SellService extends BaseService {
       const recordedTotalAmount =
         recordedSubTotalAmount.sub(totalDiscountAmount);
 
+      const recordedBuyPrice = variant.masterItem.recordedBuyPrice;
+
       return {
         masterItemId: variant.masterItemId,
         masterItemVariantId: item.masterItemVariantId,
@@ -349,6 +364,7 @@ export class SellService extends BaseService {
         recordedDiscountAmount: totalDiscountAmount,
         recordedTotalAmount,
         discounts,
+        recordedBuyPrice,
       };
     });
   }
@@ -403,6 +419,7 @@ export class SellService extends BaseService {
               recordedSubTotalAmount: item.recordedSubTotalAmount,
               recordedDiscountAmount: item.recordedDiscountAmount,
               recordedTotalAmount: item.recordedTotalAmount,
+              recordedBuyPrice: item.recordedBuyPrice,
               transactionSellDiscounts: {
                 create: item.discounts.map((d) => ({
                   orderIndex: d.orderIndex,
@@ -517,6 +534,7 @@ export class SellService extends BaseService {
               recordedSubTotalAmount: item.recordedSubTotalAmount,
               recordedDiscountAmount: item.recordedDiscountAmount,
               recordedTotalAmount: item.recordedTotalAmount,
+              recordedBuyPrice: item.recordedBuyPrice,
               transactionSellDiscounts: {
                 create: item.discounts.map((d) => ({
                   orderIndex: d.orderIndex,

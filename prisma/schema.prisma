@@ -635,6 +635,9 @@ model TransactionSalesItem {
   recordedConversion Int @map("recorded_conversion") // 1 Pack isi berapa saat beli ini? (disimpan statis jaga2 kalau master berubah)
   totalQty           Int @map("total_qty") // total qty (qty * recordedConversion)
 
+  // recorded for buyprice
+  recordedBuyPrice Decimal @map("recorded_buy_price") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // harga beli per 1 barang variant
+
   recordedSubTotalAmount Decimal @map("recorded_sub_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari variantAmount * amount
   recordedDiscountAmount Decimal @map("recorded_discount_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari setiap item discount
   recordedTotalAmount    Decimal @map("recorded_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // denormalize dari amount setiap item
@@ -806,6 +809,9 @@ model TransactionSellItem {
   qty                Int @map("qty")
   recordedConversion Int @map("recorded_conversion")
   totalQty           Int @map("total_qty") // qty * recordedConversion
+
+  // recorded for buyprice
+  recordedBuyPrice Decimal @map("recorded_buy_price") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL // harga beli per 1 barang variant
 
   recordedSubTotalAmount Decimal @map("recorded_sub_total_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL
   recordedDiscountAmount Decimal @map("recorded_discount_amount") @db.Decimal(18, 2) // CHANGED_INT_TO_DECIMAL

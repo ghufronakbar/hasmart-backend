@@ -220,7 +220,11 @@ export class ReportService extends BaseService {
         },
         transactionSalesItems: {
           include: {
-            masterItem: true,
+            masterItem: {
+              select: {
+                name: true,
+              },
+            },
             masterItemVariant: true,
           },
         },
@@ -237,8 +241,7 @@ export class ReportService extends BaseService {
       const salesItems = t.transactionSalesItems.map((item) => {
         const revenue = Number(item.recordedTotalAmount);
         const buyPricePerUnit =
-          Number(item.masterItem.recordedBuyPrice) *
-          item.masterItemVariant.amount;
+          Number(item.recordedBuyPrice) * item.masterItemVariant.amount;
         const totalCost = buyPricePerUnit * item.qty;
         const netProfit = revenue - totalCost;
 
@@ -389,7 +392,11 @@ export class ReportService extends BaseService {
         masterMember: true, // Customer Name
         transactionSellItems: {
           include: {
-            masterItem: true,
+            masterItem: {
+              select: {
+                name: true,
+              },
+            },
             masterItemVariant: true,
           },
         },
@@ -406,8 +413,7 @@ export class ReportService extends BaseService {
       const sellItems = t.transactionSellItems.map((item) => {
         const revenue = Number(item.recordedTotalAmount);
         const buyPricePerUnit =
-          Number(item.masterItem.recordedBuyPrice) *
-          item.masterItemVariant.amount;
+          Number(item.recordedBuyPrice) * item.masterItemVariant.amount;
         const totalCost = buyPricePerUnit * item.qty;
         const netProfit = revenue - totalCost;
 
